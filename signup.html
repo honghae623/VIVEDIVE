@@ -172,15 +172,16 @@
     // 아이디·닉네임 중복확인: 확인을 통과한 값을 기억해 두고, 글자를 바꾸면 다시 확인해야 해요
     const checked = { id: null, nick: null };
 
-    function idProblem(id) {
+    // 중복 여부는 서버에 물어봐요 (다른 사람이 가입한 아이디·닉네임까지 확인돼요)
+    async function idProblem(id) {
       if (!/^[a-z0-9]{4,20}$/.test(id)) return "아이디는 영문 소문자와 숫자로 4~20자 입력해 주세요.";
-      if (getUsers().some(u => u.id === id)) return "이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.";
-      return "";
+      try { const r = await api("checkId", { id }); return r.ok ? "" : r.error; }
+      catch (err) { return SERVER_DOWN; }
     }
-    function nickProblem(nick) {
+    async function nickProblem(nick) {
       if (nick.length < 2) return "닉네임은 2자 이상 입력해 주세요.";
-      if (nickTaken(nick)) return "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요.";
-      return "";
+      try { const r = await api("checkNick", { nick }); return r.ok ? "" : r.error; }
+      catch (err) { return SERVER_DOWN; }
     }
     function setCheckMsg(el, input, problem, okText) {
       el.textContent = problem || okText;
@@ -189,15 +190,15 @@
       input.closest(".field").classList.toggle("valid", !problem);
     }
 
-    $("checkId").addEventListener("click", () => {
+    $("checkId").addEventListener("click", async () => {
       const id = $("userId").value.trim().toLowerCase();
-      const problem = idProblem(id);
+      const problem = await idProblem(id);
       checked.id = problem ? null : id;
       setCheckMsg($("idMsg"), $("userId"), problem, `‘${id}’는 사용할 수 있는 아이디예요.`);
     });
-    $("checkNick").addEventListener("click", () => {
+    $("checkNick").addEventListener("click", async () => {
       const nick = $("userNick").value.trim();
-      const problem = nickProblem(nick);
+      const problem = await nickProblem(nick);
       checked.nick = problem ? null : nick;
       setCheckMsg($("nickMsg"), $("userNick"), problem, `‘${nick}’는 사용할 수 있는 닉네임이에요.`);
     });
@@ -219,7 +220,7 @@
 
     form.addEventListener("submit", async e => {
       e.preventDefault();
-      const id = social ? social.id : $("userId").value.trim().toLowerCase();
+      const id = social ? "" : $("userId").value.trim().toLowerCase();
       const pw = $("userPw").value;
       const name = $("userName").value.trim();
       const nick = $("userNick").value.trim();
@@ -228,37 +229,39 @@
       const purposeEtc = $("purposeEtc").value.trim();
 
       if (!social) {
-        const idErr = idProblem(id);
-        if (idErr) return showError([$("userId")], idErr);
         if (checked.id !== id) return showError([$("userId")], "아이디 중복확인 버튼을 눌러 주세요.");
         if (pw.length < 8) return showError([$("userPw")], "비밀번호는 8자 이상 입력해 주세요.");
         if (pw !== $("userPw2").value) return showError([$("userPw2")], "비밀번호 확인이 일치하지 않아요.");
       }
       if (name.length < 2) return showError([$("userName")], "이름을 입력해 주세요.");
-      const nickErr = nickProblem(nick);
-      if (nickErr) return showError([$("userNick")], nickErr);
       if (checked.nick !== nick) return showError([$("userNick")], "닉네임 중복확인 버튼을 눌러 주세요.");
       if (addr.length < 2) return showError([$("userAddr")], "주소를 입력해 주세요.");
       if (!purposes.length) return showError([$("purposePicks")], "이용 목적을 하나 이상 골라 주세요.");
       if (purposes.includes("기타") && !purposeEtc) return showError([$("purposeEtc")], "기타 목적을 적어 주세요.");
       if (!$("agree").checked) return showError([$("agree")], "개인정보 수집·이용에 동의해 주세요.");
 
-      const user = {
-        id, nick, name, addr,
+      const payload = {
+        nick, name, addr,
         age: $("userAge").value,
         source: $("userSource").value,
-        purposes,
-        purposeEtc: purposes.includes("기타") ? purposeEtc : "",
-        provider: social ? social.provider : "id",
-        createdAt: new Date().toISOString(),
+        purposes, purposeEtc,
       };
-      if (!social) user.pw = await hashPassword(id, pw);
+      if (social) Object.assign(payload, { provider: social.provider, socialId: social.socialId });
+      else Object.assign(payload, { id, pwHash: await hashPassword(id, pw) });
 
-      const users = getUsers();
-      users.push(user);
-      if (!writeStore(USERS_KEY, users)) return showError([], "이 브라우저에서는 저장할 수 없어요. 다른 브라우저로 시도해 주세요.");
+      $("submitBtn").disabled = true;
+      let r;
+      try { r = await api("signup", payload); }
+      catch (err) { r = { error: SERVER_DOWN }; }
+      $("submitBtn").disabled = false;
+      if (!r.token) {
+        // 그사이 다른 사람이 같은 아이디·닉네임으로 가입했으면 다시 확인받아요
+        if (/아이디/.test(r.error)) { checked.id = null; return showError([$("userId")], r.error); }
+        if (/닉네임/.test(r.error)) { checked.nick = null; return showError([$("userNick")], r.error); }
+        return showError([], r.error || SERVER_DOWN);
+      }
       try { sessionStorage.removeItem(PENDING_KEY); } catch (err) {}
-      writeStore(SESSION_KEY, id); // 가입하면 바로 로그인
+      saveSession(r.token, r.user); // 가입하면 바로 로그인
       alert(nick + "님, 가입을 환영해요!");
       location.href = next;
     });

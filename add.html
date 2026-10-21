@@ -146,19 +146,8 @@
 
     // 신청 내용은 관리자 승인 전까지 '대기' 상태로 저장해 둬요
     // (지금은 서버가 없어서 이 브라우저에만 저장돼요)
-    const STORE_KEY = "tripdive.requests";
-    function loadRequests() {
-      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (err) { return []; }
-    }
-    function saveRequest(req) {
-      try {
-        const list = loadRequests();
-        list.push(req);
-        localStorage.setItem(STORE_KEY, JSON.stringify(list));
-      } catch (err) {}
-    }
-
-    form.addEventListener("submit", e => {
+    // 신청은 서버에 저장돼서 관리자 페이지에 바로 보여요
+    form.addEventListener("submit", async e => {
       e.preventDefault();
       const req = {
         district: districtEl.value,
@@ -187,7 +176,14 @@
       }
       errorEl.textContent = "";
 
-      saveRequest({ ...req, userId: user.id, userNick: user.nick, status: "대기", createdAt: new Date().toISOString() });
+      const btn = form.querySelector(".submit-btn");
+      btn.disabled = true;
+      let r;
+      try { r = await api("addRequest", req); }
+      catch (err) { r = { error: SERVER_DOWN }; }
+      btn.disabled = false;
+      if (r.error === "login") return location.href = authUrl("login.html");
+      if (!r.ok) { errorEl.textContent = r.error || SERVER_DOWN; return; }
       document.getElementById("doneName").textContent = `‘${req.name}’`;
       form.hidden = true;
       doneEl.hidden = false;

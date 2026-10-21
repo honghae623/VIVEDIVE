@@ -121,14 +121,17 @@ function openDemoDialog(provider) {
 
 // 연동이 끝난 뒤: 이미 가입한 계정이면 바로 로그인, 처음이면 회원 정보 설문으로
 // profile: 진짜 로그인이면 { id, name, nick } (네이버·카카오가 알려 준 정보), 시연 모드면 없음
-function finishSocial(provider, profile) {
-  const id = profile ? provider + "_" + profile.id : demoSocialId(provider);
-  if (getUsers().some(u => u.id === id)) {
-    writeStore(SESSION_KEY, id);
+async function finishSocial(provider, profile) {
+  const socialId = profile ? String(profile.id) : demoSocialId(provider).slice(provider.length + 1);
+  let r;
+  try { r = await api("social", { provider, socialId }); }
+  catch (err) { alert(SERVER_DOWN); return; }
+  if (r.token) {
+    saveSession(r.token, r.user);
     location.href = next;
     return;
   }
-  const pending = { provider, id, name: (profile && profile.name) || "", nick: (profile && profile.nick) || "" };
+  const pending = { provider, socialId, name: (profile && profile.name) || "", nick: (profile && profile.nick) || "" };
   try { sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending)); } catch (err) {}
   location.href = "signup.html?social=" + provider + "&next=" + encodeURIComponent(next);
 }

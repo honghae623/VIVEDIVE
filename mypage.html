@@ -190,10 +190,20 @@
     });
 
     /* ---------- 프로필 요약 ---------- */
-    function myRequests() {
-      let list = [];
-      try { list = JSON.parse(localStorage.getItem("tripdive.requests")) || []; } catch (err) {}
-      return list.filter(r => r.userId === user.id);
+    // 내 추천 신청은 서버에서 받아 와요
+    let myReqs = [];
+    function myRequests() { return myReqs; }
+    async function loadRequests() {
+      try {
+        const r = await api("myRequests");
+        if (r.error === "login") return location.reload();
+        myReqs = r.requests || [];
+      } catch (err) {
+        $("recList").innerHTML = `<p class="empty">${SERVER_DOWN}</p>`;
+        return;
+      }
+      renderRecs();
+      renderProfile();
     }
     function renderProfile() {
       $("avatar").textContent = [...user.nick][0] || "?";
@@ -210,7 +220,7 @@
       const all = districts.flatMap(d => d.places);
       const places = keys.map(k => all.find(p => favKey(p) === k)).filter(Boolean).reverse(); // 최근에 담은 순서
       $("favGrid").innerHTML = places.length
-        ? places.map((p, i) => cardHTML(p, i).replace("<h3>", `<p class="card-district">${p.districtName}</p><h3>`)).join("")
+        ? places.map((p, i) => cardHTML(p, i).replace("<h3 ", `<p class="card-district">${p.districtName}</p><h3 `)).join("")
         : `<div class="no-result">
              <p class="no-result-title">아직 즐겨찾기한 장소가 없어요.</p>
              <p class="no-result-sub">장소 카드 왼쪽 위의 ♡를 누르면 여기에 모여요.</p>
@@ -243,15 +253,12 @@
              <a class="add-place-btn" href="add.html">+ 원하는 장소 추가</a>
            </div>`;
     }
-    $("recList").addEventListener("click", e => {
+    $("recList").addEventListener("click", async e => {
       const btn = e.target.closest(".rec-cancel");
       if (!btn || !confirm("이 장소 추천 신청을 취소할까요?")) return;
-      let list = [];
-      try { list = JSON.parse(localStorage.getItem("tripdive.requests")) || []; } catch (err) {}
-      list = list.filter(r => !(r.userId === user.id && r.createdAt === btn.dataset.created && r.status === "대기"));
-      writeStore("tripdive.requests", list);
-      renderRecs();
-      renderProfile();
+      try { await api("cancelRequest", { createdAt: btn.dataset.created }); }
+      catch (err) { return alert(SERVER_DOWN); }
+      loadRequests();
     });
 
     /* ---------- 개인정보 수정 ---------- */
@@ -275,14 +282,17 @@
       document.querySelectorAll('#purposePicks input').forEach(i => i.checked = (user.purposes || []).includes(i.value));
       $("purposeEtc").value = user.purposeEtc || "";
       $("purposeEtc").hidden = !(user.purposes || []).includes("기타");
-      $("pwPart").hidden = !user.pw; // 네이버·카카오 회원은 비밀번호가 없어요
+      $("pwPart").hidden = !user.hasPw; // 네이버·카카오 회원은 비밀번호가 없어요
       nickChecked = user.nick;
     }
 
-    $("checkNick").addEventListener("click", () => {
+    $("checkNick").addEventListener("click", async () => {
       const nick = $("userNick").value.trim();
-      const problem = nick.length < 2 ? "닉네임은 2자 이상 입력해 주세요."
-        : nickTaken(nick, user.id) ? "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요." : "";
+      let problem = nick.length < 2 ? "닉네임은 2자 이상 입력해 주세요." : "";
+      if (!problem) {
+        try { const r = await api("checkNick", { nick }); problem = r.ok ? "" : r.error; }
+        catch (err) { problem = SERVER_DOWN; }
+      }
       nickChecked = problem ? null : nick;
       $("nickMsg").textContent = problem || `‘${nick}’는 사용할 수 있는 닉네임이에요.`;
       $("nickMsg").className = "check-msg " + (problem ? "bad" : "ok");
@@ -313,33 +323,33 @@
 
       if (name.length < 2) return showError([$("userName")], "이름을 입력해 주세요.");
       if (nick.length < 2) return showError([$("userNick")], "닉네임은 2자 이상 입력해 주세요.");
-      if (nickTaken(nick, user.id)) return showError([$("userNick")], "이미 사용 중인 닉네임이에요.");
       if (nickChecked !== nick) return showError([$("userNick")], "닉네임 중복확인 버튼을 눌러 주세요.");
       if (addr.length < 2) return showError([$("userAddr")], "주소를 입력해 주세요.");
       if (!purposes.length) return showError([$("purposePicks")], "이용 목적을 하나 이상 골라 주세요.");
       if (purposes.includes("기타") && !purposeEtc) return showError([$("purposeEtc")], "기타 목적을 적어 주세요.");
 
       // 비밀번호 변경 (세 칸 중 하나라도 적었을 때만)
-      let newHash = null;
+      const payload = {
+        name, nick, addr, purposes, purposeEtc,
+        age: $("userAge").value,
+        source: $("userSource").value,
+      };
       const cur = $("curPw").value, pw1 = $("newPw").value, pw2 = $("newPw2").value;
-      if (user.pw && (cur || pw1 || pw2)) {
-        if (await hashPassword(user.id, cur) !== user.pw) return showError([$("curPw")], "현재 비밀번호가 맞지 않아요.");
+      let newHash = null;
+      if (user.hasPw && (cur || pw1 || pw2)) {
         if (pw1.length < 8) return showError([$("newPw")], "새 비밀번호는 8자 이상 입력해 주세요.");
         if (pw1 !== pw2) return showError([$("newPw2")], "새 비밀번호 확인이 일치하지 않아요.");
         newHash = await hashPassword(user.id, pw1);
+        Object.assign(payload, { curPwHash: await hashPassword(user.id, cur), newPwHash: newHash });
       }
 
-      const users = getUsers();
-      const me = users.find(u => u.id === user.id);
-      Object.assign(me, {
-        name, nick, addr, purposes,
-        purposeEtc: purposes.includes("기타") ? purposeEtc : "",
-        age: $("userAge").value,
-        source: $("userSource").value,
-        updatedAt: new Date().toISOString(),
-      });
-      if (newHash) me.pw = newHash;
-      writeStore(USERS_KEY, users);
+      let r;
+      try { r = await api("updateProfile", payload); }
+      catch (err) { return showError([], SERVER_DOWN); }
+      if (r.error === "login") return location.reload();
+      if (!r.user) return showError(r.field === "curPw" ? [$("curPw")] : /닉네임/.test(r.error) ? [$("userNick")] : [], r.error || SERVER_DOWN);
+      const me = r.user;
+      setSessionUser(me);
       user = me;
 
       ["curPw", "newPw", "newPw2"].forEach(id => $(id).value = "");
@@ -353,10 +363,14 @@
     });
 
     // 회원 탈퇴: 계정과 즐겨찾기를 지워요 (추천한 장소 신청은 남아요)
-    $("withdrawBtn").addEventListener("click", () => {
+    $("withdrawBtn").addEventListener("click", async () => {
       if (!confirm("정말 탈퇴할까요? 회원 정보와 즐겨찾기가 모두 지워지고 되돌릴 수 없어요.")) return;
-      writeStore(USERS_KEY, getUsers().filter(u => u.id !== user.id));
-      try { localStorage.removeItem(favStoreKey(user)); localStorage.removeItem(SESSION_KEY); } catch (err) {}
+      let r;
+      try { r = await api("deleteAccount"); }
+      catch (err) { return alert(SERVER_DOWN); }
+      if (!r.ok && r.error !== "login") return alert(r.error || SERVER_DOWN);
+      try { localStorage.removeItem(favStoreKey(user)); } catch (err) {}
+      clearSession();
       alert("탈퇴가 완료됐어요. 그동안 고마웠어요!");
       location.href = "index.html";
     });
@@ -373,6 +387,7 @@
       renderRecs();
       fillEditForm();
       showTab(location.hash.slice(1));
+      loadRequests();
     }
   </script>
 </body>

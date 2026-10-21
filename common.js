@@ -83,9 +83,9 @@ document.addEventListener("click", e => {
 });
 
 // 관리자가 승인한 회원 추천 장소를 그 구에 더해요 (승인 전에는 안 보여요)
-const REQUESTS_KEY = "tripdive.requests";
+// 서버에서 받은 목록을 이 브라우저에 기억해 두고 먼저 보여 준 뒤, 새 목록이 다르면 화면을 새로 그려요.
+const APPROVED_KEY = "vivedive.approved";
 const DEFAULT_VIBE = { food: ["로컬", "핫플", "정크"], cafe: ["트렌디", "힐링", "정크"], spot: ["로컬", "힐링", "웰니스"] };
-function getRequests() { return readStore(REQUESTS_KEY, []); }
 function placeFromRequest(r) {
   return {
     type: r.type, name: r.name,
@@ -95,9 +95,18 @@ function placeFromRequest(r) {
     userAdded: true, by: r.userNick,
   };
 }
-getRequests().filter(r => r.status === "승인").forEach(r => {
+readStore(APPROVED_KEY, []).forEach(r => {
   const d = districts.find(d => d.name === r.district);
   if (d && !d.places.some(p => p.name === r.name)) d.places.push(placeFromRequest(r));
+});
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const { places } = await api("approved");
+    if (!places || JSON.stringify(places) === JSON.stringify(readStore(APPROVED_KEY, []))) return;
+    writeStore(APPROVED_KEY, places);
+    // 장소 목록을 보여 주는 페이지만 새로 그려요 (글을 쓰는 페이지는 그대로)
+    if (/(^|\/)(index\.html|district\.html|mypage\.html)?$/.test(location.pathname) && !document.querySelector("form:not([hidden]) input:focus")) location.reload();
+  } catch (err) {}
 });
 
 // 장소마다 어느 구인지 적어 둬요 (즐겨찾기에서 장소를 찾을 때 써요)
@@ -164,12 +173,27 @@ function cardHTML(p, i) {
 })();
 
 /* =========================================================
-   회원가입 · 로그인 (서버가 없어서 이 브라우저에만 저장되는 시연용이에요)
+   회원가입 · 로그인
+   - 회원 정보와 장소 추천 신청은 Vercel 서버(api/db.js)에 모아 저장해요.
+     그래서 다른 사람이 가입해도 관리자 페이지에 바로 보여요.
+   - 이 브라우저에는 '로그인 표(token)'와 내 정보만 기억해 둬요.
    ========================================================= */
-const USERS_KEY = "tripdive.users";
-const SESSION_KEY = "tripdive.session";
-// 이 닉네임으로 가입한 계정이 관리자예요. 한 번 관리자로 확인되면 닉네임을 바꿔도 관리자로 남아요.
-const ADMIN_NICKS = ["홍해"];
+const SESSION_KEY = "vivedive.session";
+// 서버 주소: Vercel 사이트에서는 같은 사이트의 /api, 그 밖(내 컴퓨터, GitHub Pages)에서는 Vercel 서버로 보내요
+const API_URL = /\.vercel\.app$/.test(location.hostname) ? "/api/db" : "https://vivedive.vercel.app/api/db";
+const SERVER_DOWN = "서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.";
+
+async function api(action, data = {}) {
+  const session = readStore(SESSION_KEY, null);
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, token: session && session.token, ...data }),
+  });
+  const json = await res.json().catch(() => ({ error: "server" }));
+  if (json.error === "login") clearSession(); // 로그인 표가 맞지 않으면 로그아웃
+  return json;
+}
 
 function readStore(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (err) { return fallback; }
@@ -190,15 +214,32 @@ async function hashPassword(id, pw) {
   return "x" + h;
 }
 
-function getUsers() { return readStore(USERS_KEY, []); }
 function currentUser() {
-  const id = readStore(SESSION_KEY, null);
-  return id ? getUsers().find(u => u.id === id) || null : null;
+  const session = readStore(SESSION_KEY, null);
+  return session && session.token ? session.user : null;
 }
+function saveSession(token, user) { writeStore(SESSION_KEY, { token, user }); }
+function setSessionUser(user) {
+  const session = readStore(SESSION_KEY, null);
+  if (session) writeStore(SESSION_KEY, { ...session, user });
+}
+function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch (err) {} }
 function logout() {
-  try { localStorage.removeItem(SESSION_KEY); } catch (err) {}
+  clearSession();
   location.reload();
 }
+// 페이지를 열 때마다 서버에서 내 정보를 다시 받아요 (닉네임·관리자 여부가 바뀌었으면 새로 그려요)
+document.addEventListener("DOMContentLoaded", async () => {
+  const before = currentUser();
+  if (!before) return;
+  try {
+    const r = await api("me");
+    if (r.error === "login") return location.reload();
+    if (!r.user) return;
+    setSessionUser(r.user);
+    if (r.user.nick !== before.nick || r.user.role !== before.role) location.reload();
+  } catch (err) {}
+});
 
 // 로그인·회원가입 페이지로 갈 때 지금 페이지로 다시 돌아오게 주소를 붙여요
 function authUrl(page) {
@@ -292,29 +333,10 @@ const PURPOSES = [
 ];
 // 닉네임은 띄어쓰기·대소문자를 무시하고 비교해요 (exceptId: 내 계정은 빼고)
 function normNick(t) { return String(t || "").replace(/\s+/g, "").toLowerCase(); }
-function nickTaken(nick, exceptId) {
-  // 관리자 닉네임은 관리자가 이미 있으면 다른 사람이 쓸 수 없어요
-  // (회원 정보는 사이트 주소·브라우저마다 따로라서, 새 주소에서는 관리자가 처음 한 번 가입할 수 있어야 해요)
-  if (ADMIN_NICKS.some(a => normNick(a) === normNick(nick))) {
-    const adminExists = getUsers().some(u => u.id !== exceptId &&
-      (u.role === "admin" || ADMIN_NICKS.some(a => normNick(a) === normNick(u.nick))));
-    if (adminExists) return true;
-  }
-  return getUsers().some(u => u.id !== exceptId && normNick(u.nick) === normNick(nick));
-}
-
 /* =========================================================
    관리자
    ========================================================= */
-// 관리자 닉네임(ADMIN_NICKS)은 위쪽 회원가입·로그인 부분에 있어요.
+// 관리자는 서버가 정해요: 닉네임 "홍해"로 처음 가입한 계정 (api/db.js 의 ADMIN_NICKS)
 function isAdmin(user) {
-  if (!user) return false;
-  if (user.role === "admin") return true;
-  if (!ADMIN_NICKS.some(a => normNick(a) === normNick(user.nick))) return false;
-  // 처음 확인될 때 계정에 관리자 표시를 남겨요
-  const users = getUsers();
-  const me = users.find(u => u.id === user.id);
-  if (me) { me.role = "admin"; writeStore(USERS_KEY, users); }
-  user.role = "admin";
-  return true;
+  return !!user && user.role === "admin";
 }

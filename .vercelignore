@@ -2,3 +2,4 @@ _backup/
 *.csv
 sr.html
 .git/
+node_modules/

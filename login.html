@@ -83,11 +83,11 @@
       if (!id || !pw) {
         return showError([!id && idEl, !pw && pwEl].filter(Boolean), "아이디와 비밀번호를 입력해 주세요.");
       }
-      const user = getUsers().find(u => u.id === id);
-      if (!user || user.pw !== await hashPassword(id, pw)) {
-        return showError([idEl, pwEl], "아이디 또는 비밀번호가 맞지 않아요.");
-      }
-      writeStore(SESSION_KEY, id);
+      let r;
+      try { r = await api("login", { id, pwHash: await hashPassword(id, pw) }); }
+      catch (err) { return showError([], SERVER_DOWN); }
+      if (!r.token) return showError([idEl, pwEl], r.error || "아이디 또는 비밀번호가 맞지 않아요.");
+      saveSession(r.token, r.user);
       location.href = next;
     });
   </script>

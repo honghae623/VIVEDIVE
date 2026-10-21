@@ -1,0 +1,8 @@
+{
+  "name": "vivedive",
+  "private": true,
+  "description": "VIVEDIVE 부산 가이드 - api/db.js 가 쓰는 Vercel Blob 저장소 라이브러리",
+  "dependencies": {
+    "@vercel/blob": "^2.8.2"
+  }
+}

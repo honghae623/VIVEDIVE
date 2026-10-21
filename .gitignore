@@ -3,3 +3,5 @@ _backup/
 sr.html
 
 .vercel
+.env*
+node_modules/
