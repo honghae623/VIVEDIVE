@@ -90,8 +90,9 @@
   <script src="common.js"></script>
   <script>
     /* ---------- 지도로 고르기 ---------- */
-    // 작은 구는 이름이 겹치지 않게 글자 위치를 조금 옮기고 글자도 작게 해요
-    const LABEL_FIX = { "사하구": [-24, 0, 1], "서구": [-4, -45, 0.7], "중구": [26, 4, 0.8], "동구": [4, -6, 0.85], "영도구": [0, 4, 1], "수영구": [6, 4, 0.9], "연제구": [0, 0, 0.9] };
+    // 구 이름은 각 구의 가운데(busan-map.js 의 x, y)에 놓아요. 좁은 구는 글자를 작게 (px)
+    const LABEL_SIZE = { "서구": 18, "중구": 15, "동구": 18, "연제구": 17, "수영구": 16, "영도구": 19 };
+    const BASE_LABEL = 21;
     const mapLabel = d => LANG === "ko" ? d.name : LANG === "en" ? d.en.replace(/-gu$/, "") : tr(d.name);
     const counts = districts.map(d => d.places.length);
     const minC = Math.min(...counts), maxC = Math.max(...counts);
@@ -110,8 +111,7 @@
           <path d="${a.d}" style="fill:${mapFill(d.places.length)}"/>
         </a>`).join("")}</g>
       <g class="map-labels" aria-hidden="true">${mapAreas.map(({ a, d }) => {
-        const [dx, dy, size] = LABEL_FIX[a.name] || [0, 0, 1];
-        return `<text x="${a.x + dx}" y="${a.y + dy}" data-name="${d.name}" style="font-size:${Math.round(26 * size)}px">${escapeHTML(mapLabel(d))}</text>`;
+        return `<text x="${a.x}" y="${a.y}" data-name="${d.name}" style="font-size:${LABEL_SIZE[a.name] || BASE_LABEL}px">${escapeHTML(mapLabel(d))}</text>`;
       }).join("")}</g>`;
     const shapesEl = document.getElementById("mapShapes");
 
