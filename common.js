@@ -152,7 +152,7 @@ function cardHTML(p, i) {
       <span class="logo">VIVEDIVE</span>
       <button class="side-close" type="button" aria-label="메뉴 닫기">✕</button>
     </div>
-    <a class="side-home" href="index.html">메인으로</a>
+    <a class="side-home" href="index.html">HOME</a>
     <a class="side-home${location.pathname.endsWith("faq.html") ? " active" : ""}" href="faq.html">자주 묻는 질문</a>
     <p class="side-label">구역별 가이드</p>
     <ul class="side-list">
