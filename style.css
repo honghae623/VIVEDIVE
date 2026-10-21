@@ -1375,7 +1375,7 @@ html[lang="en"] .pick-en a span { display: none; }
   transition: fill 0.2s, filter 0.2s;
 }
 .map-labels text {
-  fill: #000; font-weight: 700; text-anchor: middle; dominant-baseline: middle;
+  fill: #000; font-weight: 400; text-anchor: middle; dominant-baseline: middle;
   pointer-events: none;
 }
 /* 글씨가 항상 검정이라, 마우스를 올린 구는 밝은 하늘색으로 강조해요 */
