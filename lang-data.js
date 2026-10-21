@@ -746,6 +746,7 @@ const LANG_DICT = {
   "장소가 많을수록 진한 색이에요": ["Darker = more places","場所が多いほど濃い色です","颜色越深，地点越多"],
   "구역별 추천 장소": ["Picks by district","エリア別おすすめスポット","分区推荐地点"],
   "구마다 먼저 가 볼 만한 곳을 골랐어요. 찾는 곳이 있으면 검색해 보세요.": ["Top picks for each district. Looking for something? Search below.","区ごとにまず行ってほしい場所を選びました。探している場所があれば検索してみてください。","为每个区精选了值得先去的地方。想找什么可以搜索看看。"],
+  "평범한 하루가 낯선 설렘이 되는 곳, BUSAN": ["Where an ordinary day turns into a new thrill: BUSAN","ありふれた一日が新鮮なときめきになる場所、BUSAN","平凡的一天也充满新鲜心动的地方——BUSAN"],
   "해변": ["Beach","ビーチ","海滩"],
   "구남로": ["Gunam-ro","九南路","九南路"],
   "달맞이길": ["Dalmaji-gil","タルマジキル","月迎路"],
