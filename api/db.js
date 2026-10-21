@@ -19,6 +19,8 @@ async function readDb() {
   const text = await new Response(r.stream).text();
   let etag = r.blob && r.blob.etag;
   if (!etag) etag = (await head(DB_PATH)).etag;
+  // 읽을 때는 W/"…"(약한 표시) 형태로 올 때가 있는데, 저장할 때 비교는 따옴표 안 값만 받아요
+  etag = String(etag).replace(/^W\//, "");
   const db = JSON.parse(text || "{}");
   db.users = db.users || [];
   db.requests = db.requests || [];
