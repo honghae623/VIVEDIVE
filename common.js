@@ -153,7 +153,6 @@ function cardHTML(p, i) {
       <button class="side-close" type="button" aria-label="메뉴 닫기">✕</button>
     </div>
     <a class="side-home" href="index.html">HOME</a>
-    <a class="side-home${location.pathname.endsWith("faq.html") ? " active" : ""}" href="faq.html">자주 묻는 질문</a>
     <p class="side-label">구역별 가이드</p>
     <ul class="side-list">
       ${districts.map(d => `
@@ -161,7 +160,8 @@ function cardHTML(p, i) {
           <strong>${d.name}</strong><span>${d.en}</span><em>${d.places.length}곳</em>
         </a></li>`).join("")}
     </ul>
-    <a class="side-add${location.pathname.endsWith("add.html") ? " active" : ""}" href="add.html">+ 원하는 장소 추가</a>`;
+    <a class="side-add${location.pathname.endsWith("add.html") ? " active" : ""}" href="add.html">+ 원하는 장소 추가</a>
+    <a class="side-home${location.pathname.endsWith("faq.html") ? " active" : ""}" href="faq.html">자주 묻는 질문</a>`;
   document.body.append(overlay, menu);
 
   const open = () => document.body.classList.add("menu-open");
@@ -277,9 +277,9 @@ function authUrl(page) {
 
   // 왼쪽 메뉴에도 마이페이지 (로그인했을 때만), 관리자 페이지 (관리자만)
   const here = location.pathname.split("/").pop();
-  const faqLink = document.querySelector(".side-menu a[href=\"faq.html\"]");
-  if (user && faqLink) {
-    faqLink.insertAdjacentHTML("afterend",
+  const homeLink = document.querySelector(".side-menu a[href=\"index.html\"]");
+  if (user && homeLink) {
+    homeLink.insertAdjacentHTML("afterend",
       `<a class="side-home${here === "mypage.html" ? " active" : ""}" href="mypage.html">마이페이지</a>`
       + (isAdmin(user) ? `<a class="side-home side-admin${here === "admin.html" ? " active" : ""}" href="admin.html">관리자 페이지</a>` : ""));
   }
