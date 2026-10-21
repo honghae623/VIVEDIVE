@@ -1348,3 +1348,80 @@ html[lang="en"] .pick-en a span { display: none; }
 .auth-find a { color: var(--muted); }
 .auth-find a:hover { color: var(--ocean); text-decoration: underline; }
 #doneBox .submit-btn { display: block; text-align: center; }
+
+/* =========================================================
+   메인: 지도로 고르기 + 구역별 추천 장소
+   ========================================================= */
+.section-head { margin-bottom: 28px; }
+.section-eyebrow {
+  font-size: 12px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--teal); margin-bottom: 10px;
+}
+.section-head h2 { font-size: clamp(26px, 3.2vw, 38px); color: var(--navy); font-weight: 700; letter-spacing: -0.01em; }
+.section-head > p:last-child { margin-top: 8px; font-size: 15px; color: var(--muted); }
+
+.map-section { margin-bottom: 96px; }
+.map-wrap {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
+  gap: 32px; align-items: start;
+}
+.map-box {
+  position: relative; background: #fff; border: 1px solid var(--line);
+  border-radius: 20px; padding: 20px;
+}
+#busanMap { display: block; width: 100%; height: auto; }
+.map-area path {
+  stroke: #fff; stroke-width: 2.5; stroke-linejoin: round;
+  transition: fill 0.2s, filter 0.2s;
+}
+.map-labels text {
+  fill: var(--navy); font-weight: 700; text-anchor: middle; dominant-baseline: middle;
+  pointer-events: none; paint-order: stroke; stroke: rgba(255, 255, 255, 0.85); stroke-width: 4px;
+}
+.map-labels text.on-dark { fill: #fff; stroke: rgba(19, 41, 75, 0.55); }
+.map-area.hover path, .map-area:focus path { fill: var(--navy) !important; filter: drop-shadow(0 6px 10px rgba(15, 30, 46, 0.35)); }
+.map-labels text.hover { fill: #fff; stroke: rgba(19, 41, 75, 0.6); }
+.map-area:focus { outline: none; }
+.map-tip {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--ink); color: #fff; border-radius: 10px;
+  padding: 10px 14px; font-size: 13px; max-width: 240px;
+  box-shadow: 0 8px 24px rgba(15, 30, 46, 0.25);
+}
+.map-tip span { color: var(--ice); margin-left: 4px; }
+.map-tip p { margin-top: 4px; color: rgba(255, 255, 255, 0.75); font-size: 12px; }
+.map-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.legend-bar { width: 72px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgb(214, 234, 244), rgb(31, 95, 139)); }
+
+.district-list {
+  list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.district-list a {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.district-list strong { font-size: 15px; color: var(--navy); }
+.district-list .dl-en { grid-column: 1; font-size: 11px; letter-spacing: 0.06em; color: var(--muted); }
+.district-list em {
+  grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: 12px;
+  color: var(--ocean); background: var(--mist); padding: 3px 9px; border-radius: 999px;
+}
+.district-list a.hover, .district-list a:focus-visible {
+  background: var(--navy); border-color: var(--navy); transform: translateY(-1px);
+}
+.district-list a.hover strong, .district-list a.hover .dl-en, .district-list a:focus-visible strong { color: #fff; }
+.district-list a.hover em { background: rgba(255, 255, 255, 0.15); color: #fff; }
+html[lang="en"] .district-list .dl-en { display: none; }
+
+.picks-section .search { margin-top: 0; }
+
+@media (max-width: 900px) {
+  .map-wrap { grid-template-columns: 1fr; }
+  .district-list { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 560px) {
+  .map-box { padding: 10px; border-radius: 14px; }
+  .district-list { grid-template-columns: 1fr 1fr; }
+  .map-section { margin-bottom: 64px; }
+}

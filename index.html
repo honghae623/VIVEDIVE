@@ -42,6 +42,30 @@
 
   <!-- ================= 구역별 추천 ================= -->
   <main id="guide">
+    <!-- ================= 지도로 고르기 ================= -->
+    <section class="map-section">
+      <div class="section-head">
+        <p class="section-eyebrow">Explore by District</p>
+        <h2>어느 동네로 떠나 볼까요?</h2>
+        <p>지도에서 구를 누르면 그 구의 맛집·카페·가볼 만한 곳을 모두 볼 수 있어요.</p>
+      </div>
+      <div class="map-wrap">
+        <div class="map-box">
+          <svg id="busanMap" role="img" aria-label="부산 구·군 지도"></svg>
+          <div class="map-tip" id="mapTip" hidden></div>
+          <p class="map-legend"><span class="legend-bar"></span>장소가 많을수록 진한 색이에요</p>
+        </div>
+        <ul class="district-list" id="districtList"></ul>
+      </div>
+    </section>
+
+    <!-- ================= 구역별 추천 장소 (검색창 포함) ================= -->
+    <section class="picks-section" id="picksSection">
+      <div class="section-head">
+        <p class="section-eyebrow">Local Picks</p>
+        <h2>구역별 추천 장소</h2>
+        <p>구마다 먼저 가 볼 만한 곳을 골랐어요. 찾는 곳이 있으면 검색해 보세요.</p>
+      </div>
     <!-- 검색창: 한 글자만 넣어도 그 글자가 들어간 곳이 모두 나와요 -->
     <div class="search">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -51,6 +75,7 @@
     <p class="search-count" id="searchCount"></p>
     <div id="results" hidden></div>
     <div id="picks"></div>
+    </section>
   </main>
 
   <footer>
@@ -59,10 +84,78 @@
   </footer>
 
   <script src="data.js"></script>
+  <script src="busan-map.js"></script>
   <script src="lang-data.js"></script>
   <script src="lang.js"></script>
   <script src="common.js"></script>
   <script>
+    /* ---------- 지도로 고르기 ---------- */
+    // 작은 구는 이름이 겹치지 않게 글자 위치를 조금 옮기고 글자도 작게 해요
+    const LABEL_FIX = { "서구": [-30, 38, 0.8], "중구": [26, 4, 0.8], "동구": [4, -6, 0.85], "영도구": [0, 4, 1], "수영구": [6, 4, 0.9], "연제구": [0, 0, 0.9] };
+    const mapLabel = d => LANG === "ko" ? d.name : LANG === "en" ? d.en.replace(/-gu$/, "") : tr(d.name);
+    const counts = districts.map(d => d.places.length);
+    const minC = Math.min(...counts), maxC = Math.max(...counts);
+    // 장소 수에 따라 연한 하늘색 → 진한 바다색
+    function mapFill(n) {
+      const t = maxC === minC ? 0.5 : Math.sqrt((n - minC) / (maxC - minC));
+      const from = [214, 234, 244], to = [31, 95, 139];
+      return `rgb(${from.map((c, i) => Math.round(c + (to[i] - c) * t)).join(",")})`;
+    }
+    const mapEl = document.getElementById("busanMap");
+    mapEl.setAttribute("viewBox", `0 0 ${BUSAN_MAP.width} ${BUSAN_MAP.height}`);
+    // 구 모양(누를 수 있음)을 먼저 그리고, 이름은 맨 위 층에 따로 그려요 (옆 구에 가려지지 않게)
+    const mapAreas = BUSAN_MAP.areas.map(a => ({ a, d: districts.find(x => x.name === a.name) })).filter(x => x.d);
+    mapEl.innerHTML = `<g id="mapShapes">${mapAreas.map(({ a, d }) => `
+        <a href="${districtUrl(d)}" class="map-area" data-name="${d.name}" aria-label="${escapeHTML(mapLabel(d))}">
+          <path d="${a.d}" style="fill:${mapFill(d.places.length)}"/>
+        </a>`).join("")}</g>
+      <g class="map-labels" aria-hidden="true">${mapAreas.map(({ a, d }) => {
+        const [dx, dy, size] = LABEL_FIX[a.name] || [0, 0, 1];
+        const dark = d.places.length > (minC + maxC) / 2;
+        return `<text x="${a.x + dx}" y="${a.y + dy}" data-name="${d.name}" class="${dark ? "on-dark" : ""}" style="font-size:${Math.round(26 * size)}px">${escapeHTML(mapLabel(d))}</text>`;
+      }).join("")}</g>`;
+    const shapesEl = document.getElementById("mapShapes");
+
+    // 오른쪽 구 목록 (지도와 같이 움직여요)
+    const listEl = document.getElementById("districtList");
+    listEl.innerHTML = districts.map(d => `
+      <li><a href="${districtUrl(d)}" data-name="${d.name}">
+        <strong>${d.name}</strong><span class="dl-en">${d.en}</span>
+        <em>${d.places.length}곳</em>
+      </a></li>`).join("");
+
+    // 지도·목록 어느 쪽에 마우스를 올려도 같은 구가 함께 강조돼요
+    const tipEl = document.getElementById("mapTip");
+    function highlight(name) {
+      document.querySelectorAll("[data-name]").forEach(el => el.classList.toggle("hover", el.dataset.name === name));
+      if (name) {
+        // 강조한 구를 맨 위에 그려서 테두리가 가려지지 않게
+        const area = shapesEl.querySelector(`.map-area[data-name="${name}"]`);
+        if (area && shapesEl.lastElementChild !== area) shapesEl.append(area);
+      }
+    }
+    function showTip(name, evt) {
+      const d = districts.find(x => x.name === name);
+      if (!d) { tipEl.hidden = true; return; }
+      tipEl.innerHTML = `<b>${d.name}</b> <span>${d.places.length}곳</span><p>${d.tagline}</p>`;
+      tipEl.hidden = false;
+      const box = mapEl.parentElement.getBoundingClientRect();
+      const x = Math.min(evt.clientX - box.left + 14, box.width - tipEl.offsetWidth - 8);
+      tipEl.style.left = Math.max(8, x) + "px";
+      tipEl.style.top = (evt.clientY - box.top + 16) + "px";
+    }
+    mapEl.addEventListener("mousemove", e => {
+      const a = e.target.closest(".map-area");
+      highlight(a ? a.dataset.name : null);
+      showTip(a ? a.dataset.name : null, e);
+    });
+    mapEl.addEventListener("mouseleave", () => { highlight(null); tipEl.hidden = true; });
+    mapEl.addEventListener("focusin", e => { const a = e.target.closest(".map-area"); highlight(a ? a.dataset.name : null); });
+    listEl.addEventListener("mouseover", e => { const a = e.target.closest("[data-name]"); highlight(a ? a.dataset.name : null); });
+    listEl.addEventListener("mouseleave", () => highlight(null));
+    listEl.addEventListener("focusin", e => { const a = e.target.closest("[data-name]"); highlight(a ? a.dataset.name : null); });
+
+    /* ---------- 구역별 추천 장소 ---------- */
     // 구역마다 맨 앞 4곳을 추천으로 보여줘요
     const PICK_COUNT = 4;
 
