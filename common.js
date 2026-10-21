@@ -45,12 +45,15 @@ function photoHTML(p) {
 function searchKey(s) {
   return String(s || "").replace(/\s+/g, "").toLowerCase();
 }
+// 다른 언어로 보고 있으면 번역된 이름·동네·태그로도 찾아요
 function searchPlaces(places, query) {
   const q = searchKey(query);
   if (!q) return places;
-  const byName = places.filter(p => searchKey(p.name).includes(q));
+  const both = s => typeof tr === "function" ? [s, tr(s)] : [s];
+  const nameHit = p => [p.name, typeof placeName === "function" ? placeName(p) : p.name].some(n => searchKey(n).includes(q));
+  const byName = places.filter(nameHit);
   const byOther = places.filter(p => !byName.includes(p) &&
-    [p.area, ...(p.tags || [])].some(t => searchKey(t).includes(q)));
+    [p.area, ...(p.tags || [])].flatMap(both).some(t => searchKey(t).includes(q)));
   return [...byName, ...byOther];
 }
 
@@ -117,9 +120,9 @@ function cardHTML(p, i) {
         <span class="card-vibe">${p.vibe.join(" · ")}</span>
       </div>
       <div class="card-body">
-        <h3>${p.name}</h3>
+        <h3 data-noi18n>${typeof placeName === "function" ? placeName(p) : p.name}</h3>
         <p title="${p.desc}">${shortDesc(p.desc)}</p>
-        ${p.addr ? `<p class="card-addr">${p.addr}</p>` : ""}
+        ${p.addr ? `<p class="card-addr" data-noi18n>${p.addr}</p>` : ""}
         <a class="map-link" href="${mapUrl}" target="_blank">지도에서 보기 →</a>
       </div>
     </article>`;
@@ -251,7 +254,7 @@ function favButtonHTML(p) {
   const key = favKey(p);
   const on = getFavs().includes(key);
   return `<button class="fav-btn${on ? " on" : ""}" type="button" data-fav="${escapeHTML(key)}"
-    aria-pressed="${on}" aria-label="${escapeHTML(p.name)} 즐겨찾기" title="즐겨찾기">${heartIcon()}</button>`;
+    aria-pressed="${on}" aria-label="${escapeHTML(typeof placeName === "function" ? placeName(p) : p.name)} 즐겨찾기" title="즐겨찾기">${heartIcon()}</button>`;
 }
 function heartIcon() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8 3.4 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.6 0 5.5 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>`;

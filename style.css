@@ -1325,3 +1325,20 @@ footer .logo { display: block; color: #fff; margin-bottom: 10px; }
   .bar-row { grid-template-columns: 100px 1fr 36px; }
 }
 .rec-addr .map-link { display: inline; margin-top: 0; padding: 0; border: none; }
+
+/* =========================================================
+   언어 선택 (푸터 맨 아래)
+   ========================================================= */
+.lang-switch {
+  margin-top: 18px;
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 0;
+  font-size: 12px; letter-spacing: 0.02em;
+}
+.lang-switch > * { padding: 0 12px; }
+.lang-switch > * + * { border-left: 1px solid rgba(255, 255, 255, 0.25); }
+.lang-switch a { color: rgba(255, 255, 255, 0.55); text-decoration: none; }
+.lang-switch a:hover { color: #fff; }
+.lang-switch span { color: #fff; font-weight: 500; }
+/* 영어로 볼 때는 영문 구 이름이 겹쳐 보이지 않게 */
+html[lang="en"] .side-list a span,
+html[lang="en"] .pick-en a span { display: none; }
