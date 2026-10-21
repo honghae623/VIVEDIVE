@@ -22,5 +22,5 @@
      위의 localhost:5500 자리에 그 주소도 똑같이 추가 등록해 주세요.
    ========================================================= */
 
-const NAVER_CLIENT_ID = "";
+const NAVER_CLIENT_ID = "5zO4JGT8DCUI4Gr1ZyXa";
 const KAKAO_REST_KEY = "";
