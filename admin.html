@@ -245,7 +245,10 @@
       barChart($("ageChart"), tally(u => u.age || "선택 안 함"), users.length);
       barChart($("providerChart"), tally(u => PROVIDER_LABEL[u.provider || "id"]), users.length);
 
-      $("memberRows").innerHTML = users.length ? users.slice().reverse().map(u => `
+      // 관리자를 맨 위에, 그 아래는 먼저 가입한 순서대로
+      const ordered = users.slice().sort((a, b) =>
+        (isAdmin(b) - isAdmin(a)) || String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+      $("memberRows").innerHTML = users.length ? ordered.map(u => `
         <tr>
           <td><b>${escapeHTML(u.nick || "")}</b>${isAdmin(u) ? ` <span class="admin-tag">관리자</span>` : ""}</td>
           <td>${escapeHTML(u.name || "-")}</td>
