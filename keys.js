@@ -23,4 +23,4 @@
    ========================================================= */
 
 const NAVER_CLIENT_ID = "5zO4JGT8DCUI4Gr1ZyXa";
-const KAKAO_REST_KEY = "";
+const KAKAO_REST_KEY = "b9567a2eb0c83fc8ca80c478c8f99c75";
