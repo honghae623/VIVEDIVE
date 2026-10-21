@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이페이지 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 마이페이지 ================= -->
+  <main class="mypage">
+    <section class="faq-head">
+      <p class="faq-eyebrow">MY PAGE</p>
+      <h1>마이페이지</h1>
+      <p>즐겨찾는 장소와 내가 추천한 장소를 모아 보고, 회원 정보를 바꿀 수 있어요.</p>
+    </section>
+
+    <!-- 로그인하지 않았을 때 -->
+    <div class="add-form login-needed" id="loginNeeded" hidden>
+      <h2>로그인이 필요해요</h2>
+      <p>마이페이지는 VIVEDIVE 회원만 볼 수 있어요.</p>
+      <div class="add-done-btns">
+        <a class="submit-btn" id="needLogin" href="login.html" style="width:auto;padding:12px 32px;font-size:14px">로그인</a>
+        <a class="pick-more" id="needSignup" href="signup.html">회원가입</a>
+      </div>
+    </div>
+
+    <div id="myContent" hidden>
+      <!-- 프로필 요약 -->
+      <section class="profile-card">
+        <div class="profile-avatar" id="avatar"></div>
+        <div class="profile-info">
+          <h2 id="profileNick"></h2>
+          <p id="profileMeta"></p>
+        </div>
+        <div class="profile-stats">
+          <a href="#favs" data-tab-link="favs"><b id="favCount">0</b><span>즐겨찾기</span></a>
+          <a href="#recs" data-tab-link="recs"><b id="recCount">0</b><span>추천한 장소</span></a>
+        </div>
+      </section>
+
+      <!-- 탭 -->
+      <div class="my-tabs" role="tablist">
+        <button class="my-tab" role="tab" data-tab="favs">즐겨찾는 장소</button>
+        <button class="my-tab" role="tab" data-tab="recs">내가 추천한 장소</button>
+        <button class="my-tab" role="tab" data-tab="edit">개인정보 수정</button>
+      </div>
+
+      <!-- 1. 즐겨찾는 장소 -->
+      <section class="my-panel" data-panel="favs">
+        <div class="grid" id="favGrid"></div>
+      </section>
+
+      <!-- 2. 내가 추천한 장소 -->
+      <section class="my-panel" data-panel="recs">
+        <div class="rec-list" id="recList"></div>
+      </section>
+
+      <!-- 3. 개인정보 수정 -->
+      <section class="my-panel" data-panel="edit">
+        <form class="auth-card edit-card" id="editForm" novalidate>
+          <fieldset class="form-section">
+            <legend><b>1</b>회원 정보</legend>
+            <div class="field">
+              <span class="field-label">아이디</span>
+              <p class="readonly-value" id="showId"></p>
+            </div>
+            <div class="field-row even">
+              <div class="field">
+                <label for="userName">이름 <em>*</em></label>
+                <input type="text" id="userName" maxlength="20" autocomplete="name">
+              </div>
+              <div class="field">
+                <label for="userNick">닉네임 <em>*</em></label>
+                <div class="check-row">
+                  <input type="text" id="userNick" maxlength="12">
+                  <button type="button" class="check-btn" id="checkNick">중복확인</button>
+                </div>
+                <p class="check-msg" id="nickMsg"></p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="userAddr">주소 <em>*</em></label>
+              <input type="text" id="userAddr" maxlength="80" autocomplete="street-address">
+            </div>
+            <div class="field-row even">
+              <div class="field">
+                <label for="userAge">연령대</label>
+                <select id="userAge">
+                  <option value="">선택 안 함</option>
+                  <option>10대</option><option>20대</option><option>30대</option>
+                  <option>40대</option><option>50대</option><option>60대 이상</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="userSource">VIVEDIVE를 알게 된 경로</label>
+                <select id="userSource">
+                  <option value="">선택 안 함</option>
+                  <option>친구·지인 추천</option><option>인스타그램·SNS</option><option>블로그·카페</option>
+                  <option>검색</option><option>수업·발표</option><option>기타</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-section">
+            <legend><b>2</b>이용 목적</legend>
+            <div class="field" id="purposeField">
+              <span class="field-label">VIVEDIVE를 어떤 목적으로 쓰시나요? <em>*</em> <small>여러 개 골라도 돼요</small></span>
+              <div class="type-picks purpose-picks" id="purposePicks"></div>
+              <input type="text" id="purposeEtc" class="purpose-etc" maxlength="40" placeholder="기타 목적을 적어 주세요" hidden>
+            </div>
+          </fieldset>
+
+          <!-- 아이디로 가입한 회원만 -->
+          <fieldset class="form-section" id="pwPart">
+            <legend><b>3</b>비밀번호 변경 <small class="legend-sub">바꿀 때만 입력하세요</small></legend>
+            <div class="field">
+              <label for="curPw">현재 비밀번호</label>
+              <input type="password" id="curPw" autocomplete="current-password">
+            </div>
+            <div class="field-row even">
+              <div class="field">
+                <label for="newPw">새 비밀번호</label>
+                <input type="password" id="newPw" autocomplete="new-password" placeholder="8자 이상">
+              </div>
+              <div class="field">
+                <label for="newPw2">새 비밀번호 확인</label>
+                <input type="password" id="newPw2" autocomplete="new-password">
+              </div>
+            </div>
+          </fieldset>
+
+          <p class="form-error" id="formError" role="alert"></p>
+          <p class="form-ok" id="formOk" role="status"></p>
+          <button class="submit-btn" type="submit">저장하기</button>
+          <p class="auth-switch"><button type="button" class="link-btn" id="withdrawBtn">회원 탈퇴</button></p>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    let user = currentUser();
+    const TYPE_LABEL = { food: "맛집", cafe: "카페", spot: "가볼 만한 곳" };
+    const PROVIDER_LABEL = { naver: "네이버로 가입", kakao: "카카오로 가입", id: "아이디로 가입" };
+
+
+    /* ---------- 탭 ---------- */
+    function showTab(name) {
+      if (!["favs", "recs", "edit"].includes(name)) name = "favs";
+      document.querySelectorAll(".my-tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === name);
+        t.setAttribute("aria-selected", t.dataset.tab === name);
+      });
+      document.querySelectorAll(".my-panel").forEach(p => p.hidden = p.dataset.panel !== name);
+      try { history.replaceState(null, "", "#" + name); } catch (err) {}
+    }
+    document.addEventListener("click", e => {
+      const t = e.target.closest("[data-tab], [data-tab-link]");
+      if (!t) return;
+      e.preventDefault();
+      showTab(t.dataset.tab || t.dataset.tabLink);
+    });
+
+    /* ---------- 프로필 요약 ---------- */
+    function myRequests() {
+      let list = [];
+      try { list = JSON.parse(localStorage.getItem("tripdive.requests")) || []; } catch (err) {}
+      return list.filter(r => r.userId === user.id);
+    }
+    function renderProfile() {
+      $("avatar").textContent = [...user.nick][0] || "?";
+      $("profileNick").textContent = user.nick + "님";
+      const joined = user.createdAt ? new Date(user.createdAt).toLocaleDateString("ko-KR") + " 가입" : "";
+      $("profileMeta").textContent = [PROVIDER_LABEL[user.provider || "id"], joined].filter(Boolean).join(" · ");
+      $("favCount").textContent = getFavs(user).length;
+      $("recCount").textContent = myRequests().length;
+    }
+
+    /* ---------- 즐겨찾는 장소 ---------- */
+    function renderFavs() {
+      const keys = getFavs(user);
+      const all = districts.flatMap(d => d.places);
+      const places = keys.map(k => all.find(p => favKey(p) === k)).filter(Boolean).reverse(); // 최근에 담은 순서
+      $("favGrid").innerHTML = places.length
+        ? places.map((p, i) => cardHTML(p, i).replace("<h3>", `<p class="card-district">${p.districtName}</p><h3>`)).join("")
+        : `<div class="no-result">
+             <p class="no-result-title">아직 즐겨찾기한 장소가 없어요.</p>
+             <p class="no-result-sub">장소 카드 왼쪽 위의 ♡를 누르면 여기에 모여요.</p>
+             <a class="add-place-btn" href="index.html#guide">장소 둘러보기</a>
+           </div>`;
+    }
+    // 마이페이지에서 ♥를 풀면 목록에서 바로 빠져요
+    document.addEventListener("favchange", () => { renderFavs(); renderProfile(); });
+
+    /* ---------- 내가 추천한 장소 ---------- */
+    function renderRecs() {
+      const list = myRequests().slice().reverse(); // 최근 신청이 위로
+      $("recList").innerHTML = list.length
+        ? list.map(r => `
+            <article class="rec-item">
+              <div class="rec-head">
+                <span class="rec-status ${r.status === "승인" ? "ok" : r.status === "거절" ? "no" : ""}">
+                  ${r.status === "승인" ? "승인 완료" : r.status === "거절" ? "반려" : "승인 대기 중"}</span>
+                <span class="rec-meta">${escapeHTML(r.district || "")} · ${TYPE_LABEL[r.type] || ""} · ${new Date(r.createdAt).toLocaleDateString("ko-KR")} 신청</span>
+              </div>
+              <h3>${escapeHTML(r.name)}</h3>
+              <p class="rec-addr">${escapeHTML(r.addr)}</p>
+              <p class="rec-reason">${escapeHTML(r.reason)}</p>
+              ${r.status === "거절" && r.rejectReason ? `<p class="rec-reject">반려 사유: ${escapeHTML(r.rejectReason)}</p>` : ""}
+              ${r.status === "대기" ? `<button class="link-btn rec-cancel" type="button" data-created="${r.createdAt}">신청 취소</button>` : ""}
+            </article>`).join("")
+        : `<div class="no-result">
+             <p class="no-result-title">아직 추천한 장소가 없어요.</p>
+             <p class="no-result-sub">나만 아는 부산 장소를 VIVEDIVE에 알려 주세요.</p>
+             <a class="add-place-btn" href="add.html">+ 원하는 장소 추가</a>
+           </div>`;
+    }
+    $("recList").addEventListener("click", e => {
+      const btn = e.target.closest(".rec-cancel");
+      if (!btn || !confirm("이 장소 추천 신청을 취소할까요?")) return;
+      let list = [];
+      try { list = JSON.parse(localStorage.getItem("tripdive.requests")) || []; } catch (err) {}
+      list = list.filter(r => !(r.userId === user.id && r.createdAt === btn.dataset.created && r.status === "대기"));
+      writeStore("tripdive.requests", list);
+      renderRecs();
+      renderProfile();
+    });
+
+    /* ---------- 개인정보 수정 ---------- */
+    let nickChecked = null; // 중복확인을 통과한 닉네임
+
+    $("purposePicks").innerHTML = PURPOSES.map(p =>
+      `<label><input type="checkbox" name="purpose" value="${p}"><span>${p}</span></label>`).join("");
+    $("purposePicks").addEventListener("change", () => {
+      $("purposeEtc").hidden = !document.querySelector('#purposePicks input[value="기타"]').checked;
+    });
+
+    function fillEditForm() {
+      $("showId").textContent = user.provider === "naver" || user.provider === "kakao"
+        ? `${user.provider === "naver" ? "네이버" : "카카오"} 계정으로 로그인해요`
+        : user.id;
+      $("userName").value = user.name || "";
+      $("userNick").value = user.nick || "";
+      $("userAddr").value = user.addr || "";
+      $("userAge").value = user.age || "";
+      $("userSource").value = user.source || "";
+      document.querySelectorAll('#purposePicks input').forEach(i => i.checked = (user.purposes || []).includes(i.value));
+      $("purposeEtc").value = user.purposeEtc || "";
+      $("purposeEtc").hidden = !(user.purposes || []).includes("기타");
+      $("pwPart").hidden = !user.pw; // 네이버·카카오 회원은 비밀번호가 없어요
+      nickChecked = user.nick;
+    }
+
+    $("checkNick").addEventListener("click", () => {
+      const nick = $("userNick").value.trim();
+      const problem = nick.length < 2 ? "닉네임은 2자 이상 입력해 주세요."
+        : nickTaken(nick, user.id) ? "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요." : "";
+      nickChecked = problem ? null : nick;
+      $("nickMsg").textContent = problem || `‘${nick}’는 사용할 수 있는 닉네임이에요.`;
+      $("nickMsg").className = "check-msg " + (problem ? "bad" : "ok");
+      $("userNick").closest(".field").classList.toggle("invalid", !!problem);
+      $("userNick").closest(".field").classList.toggle("valid", !problem);
+    });
+    $("userNick").addEventListener("input", () => {
+      nickChecked = $("userNick").value.trim() === user.nick ? user.nick : null; // 원래 닉네임이면 확인 필요 없음
+      $("nickMsg").textContent = "";
+      $("userNick").closest(".field").classList.remove("valid", "invalid");
+    });
+
+    function showError(fields, msg) {
+      document.querySelectorAll("#editForm .field").forEach(f => f.classList.remove("invalid"));
+      fields.forEach(el => el.closest(".field").classList.add("invalid"));
+      $("formError").textContent = msg;
+      $("formOk").textContent = "";
+      if (fields[0]) fields[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    $("editForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name = $("userName").value.trim();
+      const nick = $("userNick").value.trim();
+      const addr = $("userAddr").value.trim();
+      const purposes = [...document.querySelectorAll('#purposePicks input:checked')].map(i => i.value);
+      const purposeEtc = $("purposeEtc").value.trim();
+
+      if (name.length < 2) return showError([$("userName")], "이름을 입력해 주세요.");
+      if (nick.length < 2) return showError([$("userNick")], "닉네임은 2자 이상 입력해 주세요.");
+      if (nickTaken(nick, user.id)) return showError([$("userNick")], "이미 사용 중인 닉네임이에요.");
+      if (nickChecked !== nick) return showError([$("userNick")], "닉네임 중복확인 버튼을 눌러 주세요.");
+      if (addr.length < 2) return showError([$("userAddr")], "주소를 입력해 주세요.");
+      if (!purposes.length) return showError([$("purposePicks")], "이용 목적을 하나 이상 골라 주세요.");
+      if (purposes.includes("기타") && !purposeEtc) return showError([$("purposeEtc")], "기타 목적을 적어 주세요.");
+
+      // 비밀번호 변경 (세 칸 중 하나라도 적었을 때만)
+      let newHash = null;
+      const cur = $("curPw").value, pw1 = $("newPw").value, pw2 = $("newPw2").value;
+      if (user.pw && (cur || pw1 || pw2)) {
+        if (await hashPassword(user.id, cur) !== user.pw) return showError([$("curPw")], "현재 비밀번호가 맞지 않아요.");
+        if (pw1.length < 8) return showError([$("newPw")], "새 비밀번호는 8자 이상 입력해 주세요.");
+        if (pw1 !== pw2) return showError([$("newPw2")], "새 비밀번호 확인이 일치하지 않아요.");
+        newHash = await hashPassword(user.id, pw1);
+      }
+
+      const users = getUsers();
+      const me = users.find(u => u.id === user.id);
+      Object.assign(me, {
+        name, nick, addr, purposes,
+        purposeEtc: purposes.includes("기타") ? purposeEtc : "",
+        age: $("userAge").value,
+        source: $("userSource").value,
+        updatedAt: new Date().toISOString(),
+      });
+      if (newHash) me.pw = newHash;
+      writeStore(USERS_KEY, users);
+      user = me;
+
+      ["curPw", "newPw", "newPw2"].forEach(id => $(id).value = "");
+      document.querySelectorAll("#editForm .field").forEach(f => f.classList.remove("invalid", "valid"));
+      $("nickMsg").textContent = "";
+      $("formError").textContent = "";
+      $("formOk").textContent = newHash ? "회원 정보와 비밀번호를 바꿨어요." : "회원 정보를 저장했어요.";
+      nickChecked = me.nick;
+      renderProfile();
+      document.querySelectorAll(".auth-user").forEach(a => a.textContent = me.nick + "님");
+    });
+
+    // 회원 탈퇴: 계정과 즐겨찾기를 지워요 (추천한 장소 신청은 남아요)
+    $("withdrawBtn").addEventListener("click", () => {
+      if (!confirm("정말 탈퇴할까요? 회원 정보와 즐겨찾기가 모두 지워지고 되돌릴 수 없어요.")) return;
+      writeStore(USERS_KEY, getUsers().filter(u => u.id !== user.id));
+      try { localStorage.removeItem(favStoreKey(user)); localStorage.removeItem(SESSION_KEY); } catch (err) {}
+      alert("탈퇴가 완료됐어요. 그동안 고마웠어요!");
+      location.href = "index.html";
+    });
+
+    /* ---------- 처음 열릴 때 (위 함수·변수를 다 만든 뒤에 실행해요) ---------- */
+    if (!user) {
+      $("loginNeeded").hidden = false;
+      $("needLogin").href = authUrl("login.html");
+      $("needSignup").href = authUrl("signup.html");
+    } else {
+      $("myContent").hidden = false;
+      renderProfile();
+      renderFavs();
+      renderRecs();
+      fillEditForm();
+      showTab(location.hash.slice(1));
+    }
+  </script>
+</body>
+</html>

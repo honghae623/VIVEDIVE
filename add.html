@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>원하는 장소 추가 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 장소 추가 신청 ================= -->
+  <main class="faq add-page">
+    <section class="faq-head">
+      <p class="faq-eyebrow">ADD A PLACE</p>
+      <h1>원하는 장소 추가</h1>
+      <p>VIVEDIVE에 없는 장소를 알려 주세요. 보내 주신 장소는 관리자 확인을 거친 뒤 가이드에 올라가요.</p>
+    </section>
+
+    <!-- 신청 순서 안내 -->
+    <ol class="add-steps">
+      <li><b>1</b><span>장소 정보 입력</span></li>
+      <li><b>2</b><span>관리자 확인</span></li>
+      <li><b>3</b><span>가이드에 업로드</span></li>
+    </ol>
+
+    <!-- 로그인하지 않았을 때 -->
+    <div class="add-form login-needed" id="loginNeeded" hidden>
+      <h2>로그인이 필요해요</h2>
+      <p>장소 추가 신청은 VIVEDIVE 회원만 할 수 있어요.<br>로그인하면 이 페이지로 다시 돌아와요.</p>
+      <div class="add-done-btns">
+        <a class="submit-btn" id="needLogin" href="login.html" style="width:auto;padding:12px 32px;font-size:14px">로그인</a>
+        <a class="pick-more" id="needSignup" href="signup.html">회원가입</a>
+      </div>
+    </div>
+
+    <form class="add-form" id="addForm" novalidate>
+      <p class="add-user" id="addUser"></p>
+      <div class="field-row">
+        <div class="field">
+          <label for="district">지역구 <em>*</em></label>
+          <select id="district" name="district" required>
+            <option value="">구를 골라 주세요</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="field-label">종류 <em>*</em></span>
+          <div class="type-picks" id="typePicks">
+            <label><input type="radio" name="type" value="food" required><span>맛집</span></label>
+            <label><input type="radio" name="type" value="cafe"><span>카페</span></label>
+            <label><input type="radio" name="type" value="spot"><span>가볼 만한 곳</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="name">가게 이름 <em>*</em></label>
+        <input type="text" id="name" name="name" maxlength="40" placeholder="예: 남천녹차팥빙수" required>
+      </div>
+
+      <div class="field">
+        <label for="addr">가게의 정확한 주소 <em>*</em></label>
+        <input type="text" id="addr" name="addr" maxlength="80" placeholder="예: 부산 수영구 수영로394번길 28" required>
+        <p class="field-hint">도로명 주소로 적어 주시면 확인이 빨라요. 네이버 지도에서 가게를 검색하면 주소를 복사할 수 있어요.</p>
+      </div>
+
+      <div class="field">
+        <label for="reason">이 가게를 추천하는 이유 <em>*</em></label>
+        <textarea id="reason" name="reason" rows="5" maxlength="500" placeholder="어떤 메뉴가 맛있는지, 분위기는 어떤지, 언제 가면 좋은지 자유롭게 적어 주세요." required></textarea>
+        <p class="field-hint"><span id="reasonCount">0</span> / 500자 · 10자 이상 적어 주세요</p>
+      </div>
+
+      <p class="form-error" id="formError" role="alert"></p>
+      <button class="submit-btn" type="submit">추가 신청하기</button>
+    </form>
+
+    <!-- 신청 완료 안내 (처음엔 숨김) -->
+    <div class="add-done" id="addDone" hidden>
+      <p class="add-done-mark">✓</p>
+      <h2>신청이 접수됐어요</h2>
+      <p><strong id="doneName"></strong> 추천 고마워요!<br>관리자 확인을 거친 뒤 가이드에 올라가요.</p>
+      <div class="add-done-btns">
+        <button class="pick-more" type="button" id="againBtn">다른 장소 신청하기</button>
+        <a class="pick-more" href="index.html#guide">메인으로</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script>
+    const form = document.getElementById("addForm");
+    const districtEl = document.getElementById("district");
+    const nameEl = document.getElementById("name");
+    const addrEl = document.getElementById("addr");
+    const reasonEl = document.getElementById("reason");
+    const errorEl = document.getElementById("formError");
+    const doneEl = document.getElementById("addDone");
+
+    // 로그인한 회원만 신청할 수 있어요
+    const user = currentUser();
+    if (!user) {
+      form.hidden = true;
+      document.getElementById("loginNeeded").hidden = false;
+      document.getElementById("needLogin").href = authUrl("login.html");
+      document.getElementById("needSignup").href = authUrl("signup.html");
+    } else {
+      document.getElementById("addUser").textContent = `${user.nick}님으로 신청해요`;
+    }
+
+    // 구 목록 채우기
+    districtEl.innerHTML += districts.map(d =>
+      `<option value="${d.name}">${d.name}</option>`).join("");
+
+    // 검색 결과 없음 / 구역 페이지에서 넘어오면 미리 채워 두기 (add.html?q=가게이름&d=suyeong)
+    const params = new URLSearchParams(location.search);
+    nameEl.value = params.get("q") || "";
+    const fromDistrict = districts.find(d => d.en.toLowerCase() === params.get("d"));
+    if (fromDistrict) districtEl.value = fromDistrict.name;
+
+    // 추천 이유 글자 수
+    reasonEl.addEventListener("input", () => {
+      document.getElementById("reasonCount").textContent = reasonEl.value.length;
+    });
+
+    // 신청 내용은 관리자 승인 전까지 '대기' 상태로 저장해 둬요
+    // (지금은 서버가 없어서 이 브라우저에만 저장돼요)
+    const STORE_KEY = "tripdive.requests";
+    function loadRequests() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (err) { return []; }
+    }
+    function saveRequest(req) {
+      try {
+        const list = loadRequests();
+        list.push(req);
+        localStorage.setItem(STORE_KEY, JSON.stringify(list));
+      } catch (err) {}
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const req = {
+        district: districtEl.value,
+        type: (form.querySelector('input[name="type"]:checked') || {}).value || "",
+        name: nameEl.value.trim(),
+        addr: addrEl.value.trim(),
+        reason: reasonEl.value.trim(),
+      };
+
+      // 빠진 칸 확인
+      const missing = [];
+      if (!req.district) missing.push("지역구");
+      if (!req.type) missing.push("종류");
+      if (!req.name) missing.push("가게 이름");
+      if (!req.addr) missing.push("주소");
+      if (req.reason.length < 10) missing.push("추천 이유(10자 이상)");
+      form.querySelectorAll(".field").forEach(f => f.classList.remove("invalid"));
+      if (missing.length) {
+        errorEl.textContent = `${missing.join(", ")}을(를) 확인해 주세요.`;
+        if (!req.district) districtEl.closest(".field").classList.add("invalid");
+        if (!req.type) document.getElementById("typePicks").closest(".field").classList.add("invalid");
+        if (!req.name) nameEl.closest(".field").classList.add("invalid");
+        if (!req.addr) addrEl.closest(".field").classList.add("invalid");
+        if (req.reason.length < 10) reasonEl.closest(".field").classList.add("invalid");
+        return;
+      }
+      errorEl.textContent = "";
+
+      saveRequest({ ...req, userId: user.id, userNick: user.nick, status: "대기", createdAt: new Date().toISOString() });
+      document.getElementById("doneName").textContent = `‘${req.name}’`;
+      form.hidden = true;
+      doneEl.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // 다른 장소 신청하기
+    document.getElementById("againBtn").addEventListener("click", () => {
+      form.reset();
+      document.getElementById("reasonCount").textContent = "0";
+      doneEl.hidden = true;
+      form.hidden = false;
+    });
+  </script>
+</body>
+</html>

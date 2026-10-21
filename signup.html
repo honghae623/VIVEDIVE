@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원가입 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 회원가입 ================= -->
+  <main class="faq auth-page signup-page">
+    <section class="faq-head">
+      <p class="faq-eyebrow">SIGN UP</p>
+      <h1>회원가입</h1>
+      <p id="signupIntro">VIVEDIVE 회원이 되어 나만 아는 부산 장소를 알려 주세요.</p>
+    </section>
+
+    <form class="auth-card" id="signupForm" novalidate>
+      <!-- 간편 가입 (일반 가입일 때만 보여요) -->
+      <div id="socialPart">
+        <div class="social-btns" id="socialBtns"></div>
+        <p class="auth-divider"><span>또는 아이디로 가입</span></p>
+      </div>
+
+      <!-- 간편 가입으로 왔을 때 -->
+      <p class="social-linked" id="socialLinked" hidden></p>
+
+      <!-- 1. 계정 정보 (간편 가입이면 숨겨요) -->
+      <fieldset class="form-section" id="accountPart">
+        <legend><b>1</b>계정 정보</legend>
+        <div class="field">
+          <label for="userId">아이디 <em>*</em></label>
+          <div class="check-row">
+            <input type="text" id="userId" maxlength="20" autocomplete="username" placeholder="영문 소문자·숫자 4~20자">
+            <button type="button" class="check-btn" id="checkId">중복확인</button>
+          </div>
+          <p class="check-msg" id="idMsg"></p>
+        </div>
+        <div class="field">
+          <label for="userPw">비밀번호 <em>*</em></label>
+          <input type="password" id="userPw" autocomplete="new-password" placeholder="8자 이상">
+        </div>
+        <div class="field">
+          <label for="userPw2">비밀번호 확인 <em>*</em></label>
+          <input type="password" id="userPw2" autocomplete="new-password" placeholder="비밀번호를 한 번 더 입력해 주세요">
+        </div>
+      </fieldset>
+
+      <!-- 2. 회원 정보 설문 -->
+      <fieldset class="form-section">
+        <legend><b id="surveyNo">2</b>회원 정보</legend>
+        <div class="field">
+          <label for="userName">이름 <em>*</em></label>
+          <input type="text" id="userName" maxlength="20" autocomplete="name" placeholder="홍길동">
+        </div>
+        <div class="field">
+          <label for="userNick">닉네임 <em>*</em></label>
+          <div class="check-row">
+            <input type="text" id="userNick" maxlength="12" placeholder="사이트에 보일 이름 (2~12자)">
+            <button type="button" class="check-btn" id="checkNick">중복확인</button>
+          </div>
+          <p class="check-msg" id="nickMsg"></p>
+        </div>
+        <div class="field">
+          <label for="userAddr">주소 <em>*</em></label>
+          <input type="text" id="userAddr" maxlength="80" autocomplete="street-address" placeholder="예: 부산 해운대구 우동">
+          <p class="field-hint">동네까지만 적어도 괜찮아요. 가까운 장소를 추천할 때 참고해요.</p>
+        </div>
+        <div class="field-row even">
+          <div class="field">
+            <label for="userAge">연령대</label>
+            <select id="userAge">
+              <option value="">선택 안 함</option>
+              <option>10대</option><option>20대</option><option>30대</option>
+              <option>40대</option><option>50대</option><option>60대 이상</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="userSource">VIVEDIVE를 알게 된 경로</label>
+            <select id="userSource">
+              <option value="">선택 안 함</option>
+              <option>친구·지인 추천</option><option>인스타그램·SNS</option><option>블로그·카페</option>
+              <option>검색</option><option>수업·발표</option><option>기타</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- 3. 이용 목적 설문 -->
+      <fieldset class="form-section">
+        <legend><b id="purposeNo">3</b>이용 목적</legend>
+        <div class="field" id="purposeField">
+          <span class="field-label">VIVEDIVE를 어떤 목적으로 쓰실 건가요? <em>*</em> <small>여러 개 골라도 돼요</small></span>
+          <div class="type-picks purpose-picks" id="purposePicks"></div>
+          <input type="text" id="purposeEtc" class="purpose-etc" maxlength="40" placeholder="기타 목적을 적어 주세요" hidden>
+        </div>
+      </fieldset>
+
+      <!-- 개인정보 동의 -->
+      <label class="agree">
+        <input type="checkbox" id="agree">
+        <span><b>[필수]</b> 개인정보(이름, 주소, 이용 목적) 수집·이용에 동의해요.
+          <small>입력한 정보는 VIVEDIVE 회원 관리와 장소 추천에만 써요.</small></span>
+      </label>
+
+      <p class="form-error" id="formError" role="alert"></p>
+      <button class="submit-btn" type="submit" id="submitBtn">가입하기</button>
+      <p class="auth-switch">이미 회원이신가요?<a id="toLogin" href="login.html">로그인</a></p>
+    </form>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script src="keys.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    const form = document.getElementById("signupForm");
+    const $ = id => document.getElementById(id);
+
+    $("purposePicks").innerHTML = PURPOSES.map(p =>
+      `<label><input type="checkbox" name="purpose" value="${p}"><span>${p}</span></label>`).join("");
+    $("purposePicks").addEventListener("change", () => {
+      $("purposeEtc").hidden = !form.querySelector('input[value="기타"]').checked;
+    });
+
+    $("toLogin").href = "login.html?next=" + encodeURIComponent(next);
+
+    // 네이버·카카오로 왔는지 확인
+    let social = null;
+    try { social = JSON.parse(sessionStorage.getItem(PENDING_KEY)); } catch (err) {}
+    if (social && new URLSearchParams(location.search).get("social") === social.provider) {
+      $("socialPart").hidden = true;
+      $("accountPart").hidden = true;
+      $("surveyNo").textContent = "1";
+      $("purposeNo").textContent = "2";
+      $("socialLinked").hidden = false;
+      $("socialLinked").innerHTML = `<span class="social-mark ${social.provider}">${social.provider === "naver" ? "N" : kakaoIcon()}</span>
+        ${SOCIAL[social.provider].label} 계정이 연결됐어요. 아래 정보만 입력하면 가입이 끝나요.`;
+      $("signupIntro").textContent = "처음 오셨네요! 간단한 회원 정보를 알려 주세요.";
+      $("submitBtn").textContent = "가입 완료하기";
+      // 진짜 네이버·카카오 로그인이면 받아 온 이름·별명을 미리 채워 둬요
+      if (social.name) $("userName").value = social.name;
+      if (social.nick) $("userNick").value = social.nick;
+    } else {
+      social = null;
+      renderSocialButtons($("socialBtns"), "가입하기");
+    }
+
+    // 아이디·닉네임 중복확인: 확인을 통과한 값을 기억해 두고, 글자를 바꾸면 다시 확인해야 해요
+    const checked = { id: null, nick: null };
+
+    function idProblem(id) {
+      if (!/^[a-z0-9]{4,20}$/.test(id)) return "아이디는 영문 소문자와 숫자로 4~20자 입력해 주세요.";
+      if (getUsers().some(u => u.id === id)) return "이미 사용 중인 아이디예요. 다른 아이디를 입력해 주세요.";
+      return "";
+    }
+    function nickProblem(nick) {
+      if (nick.length < 2) return "닉네임은 2자 이상 입력해 주세요.";
+      if (nickTaken(nick)) return "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요.";
+      return "";
+    }
+    function setCheckMsg(el, input, problem, okText) {
+      el.textContent = problem || okText;
+      el.className = "check-msg " + (problem ? "bad" : "ok");
+      input.closest(".field").classList.toggle("invalid", !!problem);
+      input.closest(".field").classList.toggle("valid", !problem);
+    }
+
+    $("checkId").addEventListener("click", () => {
+      const id = $("userId").value.trim().toLowerCase();
+      const problem = idProblem(id);
+      checked.id = problem ? null : id;
+      setCheckMsg($("idMsg"), $("userId"), problem, `‘${id}’는 사용할 수 있는 아이디예요.`);
+    });
+    $("checkNick").addEventListener("click", () => {
+      const nick = $("userNick").value.trim();
+      const problem = nickProblem(nick);
+      checked.nick = problem ? null : nick;
+      setCheckMsg($("nickMsg"), $("userNick"), problem, `‘${nick}’는 사용할 수 있는 닉네임이에요.`);
+    });
+    // 확인한 뒤 글자를 바꾸면 확인을 다시 받아야 해요
+    [["userId", "idMsg", "id"], ["userNick", "nickMsg", "nick"]].forEach(([inputId, msgId, key]) => {
+      $(inputId).addEventListener("input", () => {
+        checked[key] = null;
+        $(msgId).textContent = "";
+        $(inputId).closest(".field").classList.remove("valid", "invalid");
+      });
+    });
+
+    function showError(fields, msg) {
+      form.querySelectorAll(".field, .agree").forEach(f => f.classList.remove("invalid"));
+      fields.forEach(el => (el.closest(".field") || el.closest(".agree")).classList.add("invalid"));
+      $("formError").textContent = msg;
+      if (fields[0]) fields[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const id = social ? social.id : $("userId").value.trim().toLowerCase();
+      const pw = $("userPw").value;
+      const name = $("userName").value.trim();
+      const nick = $("userNick").value.trim();
+      const addr = $("userAddr").value.trim();
+      const purposes = [...form.querySelectorAll('input[name="purpose"]:checked')].map(i => i.value);
+      const purposeEtc = $("purposeEtc").value.trim();
+
+      if (!social) {
+        const idErr = idProblem(id);
+        if (idErr) return showError([$("userId")], idErr);
+        if (checked.id !== id) return showError([$("userId")], "아이디 중복확인 버튼을 눌러 주세요.");
+        if (pw.length < 8) return showError([$("userPw")], "비밀번호는 8자 이상 입력해 주세요.");
+        if (pw !== $("userPw2").value) return showError([$("userPw2")], "비밀번호 확인이 일치하지 않아요.");
+      }
+      if (name.length < 2) return showError([$("userName")], "이름을 입력해 주세요.");
+      const nickErr = nickProblem(nick);
+      if (nickErr) return showError([$("userNick")], nickErr);
+      if (checked.nick !== nick) return showError([$("userNick")], "닉네임 중복확인 버튼을 눌러 주세요.");
+      if (addr.length < 2) return showError([$("userAddr")], "주소를 입력해 주세요.");
+      if (!purposes.length) return showError([$("purposePicks")], "이용 목적을 하나 이상 골라 주세요.");
+      if (purposes.includes("기타") && !purposeEtc) return showError([$("purposeEtc")], "기타 목적을 적어 주세요.");
+      if (!$("agree").checked) return showError([$("agree")], "개인정보 수집·이용에 동의해 주세요.");
+
+      const user = {
+        id, nick, name, addr,
+        age: $("userAge").value,
+        source: $("userSource").value,
+        purposes,
+        purposeEtc: purposes.includes("기타") ? purposeEtc : "",
+        provider: social ? social.provider : "id",
+        createdAt: new Date().toISOString(),
+      };
+      if (!social) user.pw = await hashPassword(id, pw);
+
+      const users = getUsers();
+      users.push(user);
+      if (!writeStore(USERS_KEY, users)) return showError([], "이 브라우저에서는 저장할 수 없어요. 다른 브라우저로 시도해 주세요.");
+      try { sessionStorage.removeItem(PENDING_KEY); } catch (err) {}
+      writeStore(SESSION_KEY, id); // 가입하면 바로 로그인
+      alert(nick + "님, 가입을 환영해요!");
+      location.href = next;
+    });
+  </script>
+</body>
+</html>

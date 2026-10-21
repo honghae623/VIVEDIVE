@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 관리자 페이지 ================= -->
+  <main class="mypage admin-page">
+    <section class="faq-head">
+      <p class="faq-eyebrow">ADMIN</p>
+      <h1>관리자 페이지</h1>
+      <p>회원이 추천한 장소를 확인해 승인하거나 반려하고, 회원 현황을 볼 수 있어요.</p>
+    </section>
+
+    <!-- 관리자가 아닐 때 -->
+    <div class="add-form login-needed" id="noAccess" hidden>
+      <h2>관리자만 볼 수 있어요</h2>
+      <p id="noAccessMsg"></p>
+      <div class="add-done-btns">
+        <a class="pick-more" href="index.html">메인으로</a>
+      </div>
+    </div>
+
+    <div id="adminContent" hidden>
+      <!-- 요약 숫자 -->
+      <section class="admin-stats">
+        <a href="#requests" data-filter-link="대기"><b id="statWait">0</b><span>승인 대기</span></a>
+        <a href="#requests" data-filter-link="승인"><b id="statOk">0</b><span>승인한 장소</span></a>
+        <a href="#requests" data-filter-link="거절"><b id="statNo">0</b><span>반려</span></a>
+        <a href="#members" data-tab-link="members"><b id="statUsers">0</b><span>전체 회원</span></a>
+      </section>
+
+      <div class="my-tabs" role="tablist">
+        <button class="my-tab" role="tab" data-tab="requests">장소 추천 신청</button>
+        <button class="my-tab" role="tab" data-tab="members">회원 현황</button>
+      </div>
+
+      <!-- 1. 장소 추천 신청 -->
+      <section class="my-panel" data-panel="requests">
+        <div class="filters admin-filters" id="reqFilters"></div>
+        <div class="rec-list" id="reqList"></div>
+      </section>
+
+      <!-- 2. 회원 현황 -->
+      <section class="my-panel" data-panel="members">
+        <div class="admin-charts">
+          <div class="chart-card">
+            <h3>이용 목적</h3>
+            <div id="purposeChart"></div>
+          </div>
+          <div class="chart-card">
+            <h3>연령대</h3>
+            <div id="ageChart"></div>
+            <h3 class="chart-gap">가입 방식</h3>
+            <div id="providerChart"></div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="member-table">
+            <thead>
+              <tr><th>닉네임</th><th>이름</th><th>가입 방식</th><th>주소</th><th>연령대</th><th>이용 목적</th><th>알게 된 경로</th><th>가입일</th></tr>
+            </thead>
+            <tbody id="memberRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const user = currentUser();
+    const TYPE_LABEL = { food: "맛집", cafe: "카페", spot: "가볼 만한 곳" };
+    const PROVIDER_LABEL = { naver: "네이버", kakao: "카카오", id: "아이디" };
+    const STATUS_LABEL = { "대기": "승인 대기 중", "승인": "승인 완료", "거절": "반려" };
+    let currentFilter = "대기";
+
+    /* ---------- 탭 ---------- */
+    function showTab(name) {
+      if (!["requests", "members"].includes(name)) name = "requests";
+      document.querySelectorAll(".my-tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === name);
+        t.setAttribute("aria-selected", t.dataset.tab === name);
+      });
+      document.querySelectorAll(".my-panel").forEach(p => p.hidden = p.dataset.panel !== name);
+      try { history.replaceState(null, "", "#" + name); } catch (err) {}
+    }
+    document.addEventListener("click", e => {
+      const t = e.target.closest("[data-tab], [data-tab-link], [data-filter-link]");
+      if (!t) return;
+      e.preventDefault();
+      if (t.dataset.filterLink) { currentFilter = t.dataset.filterLink; renderRequests(); showTab("requests"); return; }
+      showTab(t.dataset.tab || t.dataset.tabLink);
+    });
+
+    /* ---------- 요약 ---------- */
+    function renderStats() {
+      const reqs = getRequests();
+      $("statWait").textContent = reqs.filter(r => r.status === "대기").length;
+      $("statOk").textContent = reqs.filter(r => r.status === "승인").length;
+      $("statNo").textContent = reqs.filter(r => r.status === "거절").length;
+      $("statUsers").textContent = getUsers().length;
+    }
+
+    /* ---------- 장소 추천 신청 ---------- */
+    function renderRequests() {
+      const reqs = getRequests();
+      const count = st => st === "all" ? reqs.length : reqs.filter(r => r.status === st).length;
+      $("reqFilters").innerHTML = [["대기", "승인 대기"], ["승인", "승인"], ["거절", "반려"], ["all", "전체"]]
+        .map(([key, label]) => `<button class="chip ${currentFilter === key ? "active" : ""}" data-status="${key}">${label}<span>${count(key)}</span></button>`)
+        .join("");
+
+      // 신청 순서 그대로의 번호(index)를 같이 기억해 둬요 → 승인·반려할 때 이 번호로 찾아요
+      const list = reqs.map((r, index) => ({ ...r, index }))
+        .filter(r => currentFilter === "all" || r.status === currentFilter)
+        .reverse();
+
+      $("reqList").innerHTML = list.length ? list.map(r => {
+        const dup = r.status !== "승인" && districts.some(d => d.name === r.district && d.places.some(p => p.name === r.name));
+        return `
+          <article class="rec-item admin-item">
+            <div class="rec-head">
+              <span class="rec-status ${r.status === "승인" ? "ok" : r.status === "거절" ? "no" : ""}">${STATUS_LABEL[r.status] || r.status}</span>
+              <span class="rec-meta">${escapeHTML(r.district || "")} · ${TYPE_LABEL[r.type] || ""} · ${new Date(r.createdAt).toLocaleDateString("ko-KR")} 신청</span>
+            </div>
+            <h3>${escapeHTML(r.name)}</h3>
+            <p class="rec-addr">${escapeHTML(r.addr)}
+              <a class="map-link" href="https://map.naver.com/p/search/${encodeURIComponent(r.addr + " " + r.name)}" target="_blank">지도에서 확인 →</a></p>
+            <p class="rec-reason">${escapeHTML(r.reason)}</p>
+            <p class="rec-by">신청한 회원: <b>${escapeHTML(r.userNick || "알 수 없음")}</b></p>
+            ${dup ? `<p class="rec-warn">이미 ${escapeHTML(r.district)}에 같은 이름의 장소가 있어요.</p>` : ""}
+            ${r.status === "거절" && r.rejectReason ? `<p class="rec-reject">반려 사유: ${escapeHTML(r.rejectReason)}</p>` : ""}
+            <div class="admin-actions">
+              ${r.status === "대기" ? `
+                <button class="act-btn ok" data-act="approve" data-index="${r.index}">승인하기</button>
+                <button class="act-btn no" data-act="reject" data-index="${r.index}">반려하기</button>` : `
+                <button class="act-btn" data-act="reset" data-index="${r.index}">대기로 되돌리기</button>`}
+              ${r.status === "승인" ? `<a class="act-btn" href="district.html?d=${slugOf(r.district)}&q=${encodeURIComponent(r.name)}">사이트에서 보기</a>` : ""}
+            </div>
+          </article>`;
+      }).join("") : `
+        <div class="no-result">
+          <p class="no-result-title">${currentFilter === "대기" ? "승인을 기다리는 신청이 없어요." : "해당하는 신청이 없어요."}</p>
+          <p class="no-result-sub">회원이 장소 추가를 신청하면 여기에 모여요.</p>
+        </div>`;
+    }
+    function slugOf(name) {
+      const d = districts.find(d => d.name === name);
+      return d ? d.en.toLowerCase() : "";
+    }
+
+    $("reqFilters").addEventListener("click", e => {
+      const b = e.target.closest("[data-status]");
+      if (!b) return;
+      currentFilter = b.dataset.status;
+      renderRequests();
+    });
+
+    $("reqList").addEventListener("click", e => {
+      const b = e.target.closest("button[data-act]");
+      if (!b) return;
+      const reqs = getRequests();
+      const r = reqs[Number(b.dataset.index)];
+      if (!r) return;
+
+      if (b.dataset.act === "approve") {
+        if (!confirm(`‘${r.name}’을(를) ${r.district}에 올릴까요?\n승인하면 바로 사이트에 보여요.`)) return;
+        r.status = "승인";
+        delete r.rejectReason;
+      } else if (b.dataset.act === "reject") {
+        const reason = prompt(`‘${r.name}’을(를) 반려하는 이유를 적어 주세요. (신청한 회원의 마이페이지에 보여요)`, "");
+        if (reason === null) return;
+        r.status = "거절";
+        r.rejectReason = reason.trim();
+      } else if (b.dataset.act === "reset") {
+        if (!confirm(`‘${r.name}’을(를) 승인 대기로 되돌릴까요?${r.status === "승인" ? "\n사이트에서는 다시 안 보여요." : ""}`)) return;
+        r.status = "대기";
+        delete r.rejectReason;
+      }
+      r.reviewedAt = new Date().toISOString();
+      r.reviewedBy = user.nick;
+      writeStore(REQUESTS_KEY, reqs);
+      renderStats();
+      renderRequests();
+    });
+
+    /* ---------- 회원 현황 ---------- */
+    function barChart(el, counts, total) {
+      const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      el.innerHTML = rows.length ? rows.map(([label, n]) => `
+        <div class="bar-row">
+          <span class="bar-label">${escapeHTML(label)}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${total ? Math.round(n / total * 100) : 0}%"></span></span>
+          <span class="bar-num">${n}명</span>
+        </div>`).join("") : `<p class="chart-empty">아직 응답이 없어요.</p>`;
+    }
+    function renderMembers() {
+      const users = getUsers();
+      const tally = (fn) => {
+        const c = {};
+        users.forEach(u => [].concat(fn(u)).filter(Boolean).forEach(v => c[v] = (c[v] || 0) + 1));
+        return c;
+      };
+      barChart($("purposeChart"), tally(u => u.purposes || []), users.length);
+      barChart($("ageChart"), tally(u => u.age || "선택 안 함"), users.length);
+      barChart($("providerChart"), tally(u => PROVIDER_LABEL[u.provider || "id"]), users.length);
+
+      $("memberRows").innerHTML = users.length ? users.slice().reverse().map(u => `
+        <tr>
+          <td><b>${escapeHTML(u.nick || "")}</b>${isAdmin(u) ? ` <span class="admin-tag">관리자</span>` : ""}</td>
+          <td>${escapeHTML(u.name || "-")}</td>
+          <td>${PROVIDER_LABEL[u.provider || "id"]}</td>
+          <td>${escapeHTML(u.addr || "-")}</td>
+          <td>${escapeHTML(u.age || "-")}</td>
+          <td class="td-wide">${escapeHTML((u.purposes || []).map(p => p === "기타" && u.purposeEtc ? "기타(" + u.purposeEtc + ")" : p).join(", ") || "-")}</td>
+          <td>${escapeHTML(u.source || "-")}</td>
+          <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString("ko-KR") : "-"}</td>
+        </tr>`).join("") : `<tr><td colspan="8" class="chart-empty">아직 가입한 회원이 없어요.</td></tr>`;
+    }
+
+    /* ---------- 처음 열릴 때 ---------- */
+    if (!isAdmin(user)) {
+      $("noAccess").hidden = false;
+      $("noAccessMsg").innerHTML = user
+        ? "이 계정은 관리자 계정이 아니에요."
+        : `관리자 계정으로 <a href="${authUrl("login.html")}">로그인</a>해 주세요.`;
+    } else {
+      $("adminContent").hidden = false;
+      renderStats();
+      renderRequests();
+      renderMembers();
+      showTab(location.hash.slice(1));
+    }
+  </script>
+</body>
+</html>

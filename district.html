@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구역 가이드 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="district-page">
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 구역 탭 ================= -->
+  <div class="tabs-wrap" id="guide">
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+  <!-- ================= 구역 내용 ================= -->
+  <main>
+    <section class="district-head">
+      <h2 class="district-en" id="districtEn"></h2>
+      <div>
+        <p class="district-tagline" id="districtTagline"></p>
+        <p class="district-intro" id="districtIntro"></p>
+      </div>
+    </section>
+
+    <section class="vibe">
+      <div class="vibe-head">
+        <div>
+          <h3 class="vibe-title">Vibe Check</h3>
+          <p class="vibe-sub">오늘 끌리는 쪽에 체크하면 취향에 맞는 장소만 골라 보여드려요.</p>
+        </div>
+        <button class="vibe-reset" id="vibeReset">체크 모두 해제</button>
+      </div>
+      <div id="vibeRows"></div>
+      <p class="vibe-result" id="vibeResult"></p>
+    </section>
+
+    <!-- 검색창: 이 구역 안에서 한 글자만 넣어도 그 글자가 들어간 곳이 모두 나와요 -->
+    <div class="search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="searchInput" placeholder="이 구역에서 장소 찾기 (예: 국밥, 카페)" autocomplete="off">
+      <button class="search-clear" id="searchClear" type="button" aria-label="검색어 지우기" hidden>✕</button>
+    </div>
+    <p class="search-count" id="searchCount"></p>
+
+    <div class="filters" id="filters"></div>
+    <div class="filters areas" id="areas"></div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script>
+    /* 현재 선택된 상태 */
+    // 주소의 ?d=haeundae 로 어느 구역인지 정해요 (없거나 틀리면 첫 구역)
+    const slug = new URLSearchParams(location.search).get("d");
+    let currentDistrict = Math.max(0, districts.findIndex(d => d.en.toLowerCase() === slug));
+    let currentFilter = "all"; // 어떤 카테고리를 보고 있는지
+    let currentArea = "all";   // 어떤 동네를 보고 있는지
+    const checkedVibes = new Set(); // 체크한 취향들 (구역을 바꿔도 유지돼요)
+
+    /* HTML 요소 가져오기 */
+    const vibeRowsEl = document.getElementById("vibeRows");
+    const vibeResultEl = document.getElementById("vibeResult");
+    const tabsEl = document.getElementById("tabs");
+    const filtersEl = document.getElementById("filters");
+    const areasEl = document.getElementById("areas");
+    const gridEl = document.getElementById("grid");
+    const searchInput = document.getElementById("searchInput");
+    const searchClear = document.getElementById("searchClear");
+    const searchCountEl = document.getElementById("searchCount");
+
+    /* =========================================================
+       2. 화면 그리기 함수들
+       ========================================================= */
+
+    // 구역 탭 버튼 만들기
+    function renderTabs() {
+      tabsEl.innerHTML = districts.map((d, i) =>
+        `<button class="tab ${i === currentDistrict ? "active" : ""}" data-index="${i}">${d.name}</button>`
+      ).join("");
+    }
+
+    // 구역 소개 글 채우기
+    function renderHeader() {
+      const d = districts[currentDistrict];
+      document.title = `${d.name} · VIVEDIVE`;
+      document.getElementById("districtEn").innerHTML =
+        `${d.en}<span class="district-ko">${d.name}</span>`;
+      document.getElementById("districtTagline").textContent = d.tagline;
+      document.getElementById("districtIntro").textContent = d.intro;
+    }
+
+    // 장소가 체크한 취향에 맞는지 검사
+    // - 한 줄에서 한쪽만 체크했으면 그쪽인 장소만 통과
+    // - 한 줄에서 둘 다 체크했거나 아무것도 안 했으면 상관없음
+    function matchesVibe(place) {
+      return vibeAxes.every(axis => {
+        const picked = [axis.left.name, axis.right.name].filter(n => checkedVibes.has(n));
+        return picked.length !== 1 || place.vibe.includes(picked[0]);
+      });
+    }
+
+    // 취향에 맞는 이 구역의 장소들
+    function vibePlaces() {
+      return districts[currentDistrict].places.filter(matchesVibe);
+    }
+
+    // 체크리스트 + 이 구역의 성향 막대 그리기
+    function renderVibe() {
+      const places = districts[currentDistrict].places;
+
+      vibeRowsEl.innerHTML = vibeAxes.map(axis => {
+        // 이 구역 장소 중 왼쪽(로컬/핫플/정크) 비율
+        const leftCount = places.filter(p => p.vibe.includes(axis.left.name)).length;
+        const leftPct = Math.round(leftCount / places.length * 100);
+
+        const option = (side, cls) => `
+          <label class="vibe-opt ${cls}">
+            <input type="checkbox" value="${side.name}" ${checkedVibes.has(side.name) ? "checked" : ""}>
+            <span class="box"></span>
+            <span><b>${side.name}</b><small>${side.desc}</small></span>
+          </label>`;
+
+        return `
+          <div class="vibe-row">
+            ${option(axis.left, "left")}
+            <div class="vibe-meter">
+              <div class="meter-track"><div class="meter-fill" style="width:${leftPct}%"></div></div>
+              <div class="meter-label"><span>${axis.left.name} ${leftPct}%</span><span>${axis.right.name} ${100 - leftPct}%</span></div>
+            </div>
+            ${option(axis.right, "right")}
+          </div>`;
+      }).join("");
+
+      renderVibeResult();
+    }
+
+    // 체크 결과 한 줄 요약
+    function renderVibeResult() {
+      if (checkedVibes.size === 0) {
+        vibeResultEl.textContent = `막대는 ${districts[currentDistrict].name}의 분위기예요. 체크하면 취향에 맞는 곳만 보여드려요.`;
+      } else {
+        vibeResultEl.textContent = `${[...checkedVibes].join(" · ")} 취향에 맞는 곳: ${vibePlaces().length}곳`;
+      }
+    }
+
+    // 취향 + 검색어까지 맞는 장소들
+    function searchedPlaces() {
+      return searchPlaces(vibePlaces(), searchInput.value.trim());
+    }
+
+    // 동네까지 고른 장소들
+    function areaPlaces() {
+      return searchedPlaces().filter(p => currentArea === "all" || p.area === currentArea);
+    }
+
+    // 검색 결과 한 줄 안내
+    function renderSearchCount() {
+      const q = searchInput.value.trim();
+      searchClear.hidden = !q;
+      const n = searchedPlaces().length;
+      searchCountEl.textContent = q && n
+        ? `‘${q}’ 검색 결과 ${n}곳`
+        : "";
+    }
+
+    // 동네 버튼 만들기 (장소에 area가 적혀 있는 구역만)
+    function renderAreas() {
+      const all = districts[currentDistrict].places;
+      const names = [...new Set(all.map(p => p.area).filter(Boolean))];
+      if (names.length === 0) { areasEl.innerHTML = ""; return; }
+
+      const places = searchedPlaces();
+      areasEl.innerHTML = `<span class="areas-label">동네</span>` +
+        ["all", ...names].map(name => {
+          const count = name === "all" ? places.length : places.filter(p => p.area === name).length;
+          return `<button class="chip ${name === currentArea ? "active" : ""}" data-area="${name}">
+                    ${name === "all" ? "전체" : name}<span>${count}</span>
+                  </button>`;
+        }).join("");
+    }
+
+    // 맛집/카페/명소 필터 버튼 만들기 (개수도 함께 표시)
+    function renderFilters() {
+      const places = areaPlaces();
+      filtersEl.innerHTML = Object.keys(categories).map(key => {
+        const count = key === "all" ? places.length : places.filter(p => p.type === key).length;
+        return `<button class="chip ${key === currentFilter ? "active" : ""}" data-filter="${key}">
+                  ${categories[key].label}<span>${count}</span>
+                </button>`;
+      }).join("");
+    }
+
+    // 장소 카드 만들기
+    function renderCards() {
+      const places = areaPlaces()
+        .filter(p => currentFilter === "all" || p.type === currentFilter);
+
+      if (places.length === 0) {
+        gridEl.innerHTML = searchInput.value.trim()
+          ? noResultHTML(searchInput.value.trim())
+          : checkedVibes.size > 0
+          ? `<p class="empty">체크한 취향에 딱 맞는 곳이 없어요. 체크를 조금 풀어볼까요?</p>`
+          : `<p class="empty">이 구역의 ${categories[currentFilter].label} 정보는 준비 중이에요.</p>`;
+        return;
+      }
+
+      gridEl.innerHTML = places.map(cardHTML).join("");
+    }
+
+    // 전체 다시 그리기
+    function render() {
+      renderTabs();
+      renderHeader();
+      renderVibe();
+      renderSearchCount();
+      renderAreas();
+      renderFilters();
+      renderCards();
+    }
+
+    // 동네 버튼을 눌렀을 때
+    areasEl.addEventListener("click", e => {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      currentArea = btn.dataset.area;
+      currentFilter = "all";
+      renderAreas();
+      renderFilters();
+      renderCards();
+    });
+
+    // 검색어를 넣을 때마다 바로 다시 찾아요
+    function onSearch() {
+      currentFilter = "all";
+      currentArea = "all";
+      renderSearchCount();
+      renderAreas();
+      renderFilters();
+      renderCards();
+    }
+    searchInput.addEventListener("input", onSearch);
+    searchClear.addEventListener("click", () => { searchInput.value = ""; onSearch(); searchInput.focus(); });
+
+    // 취향 체크박스를 눌렀을 때
+    vibeRowsEl.addEventListener("change", e => {
+      const name = e.target.value;
+      if (e.target.checked) checkedVibes.add(name);
+      else checkedVibes.delete(name);
+      currentFilter = "all";
+      renderVibeResult();
+      renderSearchCount();
+      renderAreas();
+      renderFilters();
+      renderCards();
+    });
+
+    // '체크 모두 해제' 버튼
+    document.getElementById("vibeReset").addEventListener("click", () => {
+      checkedVibes.clear();
+      currentFilter = "all";
+      render();
+    });
+
+    /* =========================================================
+       3. 클릭 이벤트
+       ========================================================= */
+
+    // 구역 탭을 눌렀을 때
+    tabsEl.addEventListener("click", e => {
+      const btn = e.target.closest(".tab");
+      if (!btn) return;
+      currentDistrict = Number(btn.dataset.index);
+      currentFilter = "all";  // 구역을 바꾸면 필터와 동네는 '전체'로 초기화
+      currentArea = "all";
+      render();
+      // 주소도 바꿔 두면 새로고침하거나 링크를 공유해도 이 구역이 열려요
+      try { history.replaceState(null, "", districtUrl(districts[currentDistrict])); } catch (err) {}
+      btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    });
+
+    // 필터 버튼을 눌렀을 때
+    filtersEl.addEventListener("click", e => {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      currentFilter = btn.dataset.filter;
+      renderFilters();
+      renderCards();
+    });
+
+    // 처음 페이지가 열릴 때 한 번 그리기 (주소에 ?q=국밥 처럼 있으면 그 검색어로 시작)
+    searchInput.value = new URLSearchParams(location.search).get("q") || "";
+    render();
+  </script>
+</body>
+</html>

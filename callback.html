@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 중 · VIVEDIVE</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- 네이버·카카오 로그인을 마치면 이 페이지로 돌아와요 -->
+  <main class="faq auth-page">
+    <section class="faq-head">
+      <p class="faq-eyebrow">LOG IN</p>
+      <h1 id="cbTitle">로그인하는 중이에요</h1>
+      <p id="cbMsg">잠시만 기다려 주세요…</p>
+      <p id="cbRetry" hidden><a class="link-btn" href="login.html">로그인 화면으로 돌아가기</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="common.js"></script>
+  <script src="keys.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    // auth.js 의 next 대신, 로그인 버튼을 누를 때 저장해 둔 돌아갈 페이지를 써요
+    let back = "index.html";
+    try { back = sessionStorage.getItem(NEXT_KEY) || back; } catch (err) {}
+    if (!/^[\w.-]+\.html(\?[^#]*)?$/.test(back)) back = "index.html";
+
+    function fail(msg) {
+      document.getElementById("cbTitle").textContent = "로그인하지 못했어요";
+      document.getElementById("cbMsg").textContent = msg;
+      document.getElementById("cbRetry").hidden = false;
+    }
+    function done(provider, profile) {
+      try { sessionStorage.removeItem(NEXT_KEY); } catch (err) {}
+      next = back;
+      finishSocial(provider, profile);
+    }
+
+    // 카카오: ?code=...&state=kakao 로 돌아와요 → 코드를 토큰으로 바꾸고 회원 정보를 받아요
+    async function kakaoCallback(code) {
+      const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: KAKAO_REST_KEY.trim(),
+          redirect_uri: CALLBACK_URL,
+          code,
+        }),
+      });
+      const token = await tokenRes.json();
+      if (!token.access_token) throw new Error("카카오 인증에 실패했어요. (" + (token.error_description || token.error || tokenRes.status) + ")");
+      const meRes = await fetch("https://kapi.kakao.com/v2/user/me", {
+        headers: { Authorization: "Bearer " + token.access_token },
+      });
+      const me = await meRes.json();
+      if (!me.id) throw new Error("카카오 회원 정보를 받지 못했어요.");
+      const nick = (me.kakao_account && me.kakao_account.profile && me.kakao_account.profile.nickname)
+        || (me.properties && me.properties.nickname) || "";
+      const name = (me.kakao_account && me.kakao_account.name) || "";
+      done("kakao", { id: String(me.id), name, nick });
+    }
+
+    // 네이버: #access_token=... 으로 돌아와요 → 네이버 스크립트로 회원 정보를 받아요
+    async function naverCallback() {
+      await loadNaverSdk();
+      const nl = makeNaverLogin();
+      nl.getLoginStatus(status => {
+        if (!status) return fail("네이버 인증에 실패했어요. 다시 시도해 주세요.");
+        const u = nl.user;
+        done("naver", { id: String(u.getId()), name: u.getName() || "", nick: u.getNickName() || "" });
+      });
+    }
+
+    (async () => {
+      const q = new URLSearchParams(location.search);
+      try {
+        if (q.get("error")) {
+          fail(q.get("error") === "access_denied" ? "로그인을 취소했어요." : "로그인 중 문제가 생겼어요. (" + q.get("error") + ")");
+        } else if (q.get("code") && q.get("state") === "kakao") {
+          if (!realLogin("kakao")) return fail("keys.js 에 카카오 REST API 키가 없어요.");
+          await kakaoCallback(q.get("code"));
+        } else if (location.hash.includes("access_token")) {
+          if (!realLogin("naver")) return fail("keys.js 에 네이버 Client ID 가 없어요.");
+          await naverCallback();
+        } else {
+          fail("로그인 정보가 없어요. 로그인 화면에서 다시 시도해 주세요.");
+        }
+      } catch (err) {
+        fail(err.message);
+      }
+    })();
+  </script>
+</body>
+</html>
