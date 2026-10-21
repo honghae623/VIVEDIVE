@@ -93,6 +93,8 @@
     // 구 이름은 각 구의 가운데(busan-map.js 의 x, y)에 놓아요. 좁은 구는 글자를 작게 (px)
     const LABEL_SIZE = { "서구": 18, "중구": 15, "동구": 18, "연제구": 17, "수영구": 16, "영도구": 19 };
     const BASE_LABEL = 21;
+    // 가운데에서 살짝 옮기고 싶은 구 [오른쪽(+)/왼쪽(-), 아래(+)/위(-)]
+    const LABEL_NUDGE = { "동래구": [14, 0], "해운대구": [0, -24] };
     const mapLabel = d => LANG === "ko" ? d.name : LANG === "en" ? d.en.replace(/-gu$/, "") : tr(d.name);
     const counts = districts.map(d => d.places.length);
     const minC = Math.min(...counts), maxC = Math.max(...counts);
@@ -111,7 +113,8 @@
           <path d="${a.d}" style="fill:${mapFill(d.places.length)}"/>
         </a>`).join("")}</g>
       <g class="map-labels" aria-hidden="true">${mapAreas.map(({ a, d }) => {
-        return `<text x="${a.x}" y="${a.y}" data-name="${d.name}" style="font-size:${LABEL_SIZE[a.name] || BASE_LABEL}px">${escapeHTML(mapLabel(d))}</text>`;
+        const [nx, ny] = LABEL_NUDGE[a.name] || [0, 0];
+        return `<text x="${a.x + nx}" y="${a.y + ny}" data-name="${d.name}" style="font-size:${LABEL_SIZE[a.name] || BASE_LABEL}px">${escapeHTML(mapLabel(d))}</text>`;
       }).join("")}</g>`;
     const shapesEl = document.getElementById("mapShapes");
 
