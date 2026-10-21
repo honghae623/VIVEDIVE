@@ -747,6 +747,8 @@ const LANG_DICT = {
   "구역별 추천 장소": ["Picks by district","エリア別おすすめスポット","分区推荐地点"],
   "구마다 먼저 가 볼 만한 곳을 골랐어요. 찾는 곳이 있으면 검색해 보세요.": ["Top picks for each district. Looking for something? Search below.","区ごとにまず行ってほしい場所を選びました。探している場所があれば検索してみてください。","为每个区精选了值得先去的地方。想找什么可以搜索看看。"],
   "평범한 하루가 낯선 설렘이 되는 곳, BUSAN": ["Where an ordinary day turns into a new thrill: BUSAN","ありふれた一日が新鮮なときめきになる場所、BUSAN","平凡的一天也充满新鲜心动的地方——BUSAN"],
+  "추천한 장소는 어떤 기준으로 승인되나요?": ["How are suggested places approved?","おすすめした場所はどんな基準で承認されますか？","推荐的地点按什么标准审核？"],
+  "맛, 분위기, 방문객 수를 함께 살펴봐요. 세 가지를 종합해 두루 좋은 곳이거나, 그중 하나라도 특별히 뛰어난 곳이라면 승인해요. 승인되면 해당 구 페이지에 ‘회원 추천’ 표시와 함께 올라가고, 반려된 경우에는 마이페이지에서 반려 사유를 확인할 수 있어요.": ["We look at <strong>taste, atmosphere and number of visitors</strong>. A place is approved if it's good across all three, or if it truly stands out in even one of them. Approved places appear on their district page with a \"Member Pick\" tag; if a suggestion is rejected, you can see the reason on My Page.","<strong>味・雰囲気・来客数</strong>をあわせて見ます。3つを総合してバランスよく良い場所、またはどれか1つでも特に優れている場所なら承認します。承認されるとその区のページに「会員おすすめ」の表示付きで掲載され、差し戻しの場合はマイページで理由を確認できます。","我们会综合考察<strong>味道、氛围和客流量</strong>。三方面综合都不错，或其中任意一项特别出色，就会通过审核。通过后会以“会员推荐”标签出现在相应区的页面；如被驳回，可在我的页面查看原因。"],
   "해변": ["Beach","ビーチ","海滩"],
   "구남로": ["Gunam-ro","九南路","九南路"],
   "달맞이길": ["Dalmaji-gil","タルマジキル","月迎路"],
