@@ -1375,12 +1375,11 @@ html[lang="en"] .pick-en a span { display: none; }
   transition: fill 0.2s, filter 0.2s;
 }
 .map-labels text {
-  fill: var(--navy); font-weight: 700; text-anchor: middle; dominant-baseline: middle;
-  pointer-events: none; paint-order: stroke; stroke: rgba(255, 255, 255, 0.85); stroke-width: 4px;
+  fill: #000; font-weight: 700; text-anchor: middle; dominant-baseline: middle;
+  pointer-events: none;
 }
-.map-labels text.on-dark { fill: #fff; stroke: rgba(19, 41, 75, 0.55); }
-.map-area.hover path, .map-area:focus path { fill: var(--navy) !important; filter: drop-shadow(0 6px 10px rgba(15, 30, 46, 0.35)); }
-.map-labels text.hover { fill: #fff; stroke: rgba(19, 41, 75, 0.6); }
+/* 글씨가 항상 검정이라, 마우스를 올린 구는 밝은 하늘색으로 강조해요 */
+.map-area.hover path, .map-area:focus path { fill: var(--ice) !important; filter: drop-shadow(0 6px 10px rgba(15, 30, 46, 0.3)); }
 .map-area:focus { outline: none; }
 .map-tip {
   position: absolute; z-index: 5; pointer-events: none;
