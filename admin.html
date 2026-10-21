@@ -255,7 +255,7 @@
           <td class="td-wide">${escapeHTML((u.purposes || []).map(p => p === "기타" && u.purposeEtc ? "기타(" + u.purposeEtc + ")" : p).join(", ") || "-")}</td>
           <td>${escapeHTML(u.source || "-")}</td>
           <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString("ko-KR") : "-"}</td>
-          <td>${u.id === user.id ? "" : `<button class="act-btn no" type="button" data-remove="${escapeHTML(u.id)}">탈퇴시키기</button>`}</td>
+          <td>${u.id === user.id ? "" : `<button class="act-btn no" type="button" data-remove="${escapeHTML(u.id)}">탈퇴</button>`}</td>
         </tr>`).join("") : `<tr><td colspan="9" class="chart-empty">아직 가입한 회원이 없어요.</td></tr>`;
     }
 
