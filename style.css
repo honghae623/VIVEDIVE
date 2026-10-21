@@ -1342,3 +1342,9 @@ footer .logo { display: block; color: #fff; margin-bottom: 10px; }
 /* 영어로 볼 때는 영문 구 이름이 겹쳐 보이지 않게 */
 html[lang="en"] .side-list a span,
 html[lang="en"] .pick-en a span { display: none; }
+
+/* 아이디·비밀번호 찾기 */
+.auth-find { margin-top: 14px; text-align: center; font-size: 13px; }
+.auth-find a { color: var(--muted); }
+.auth-find a:hover { color: var(--ocean); text-decoration: underline; }
+#doneBox .submit-btn { display: block; text-align: center; }

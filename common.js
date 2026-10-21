@@ -293,10 +293,12 @@ const PURPOSES = [
 // 닉네임은 띄어쓰기·대소문자를 무시하고 비교해요 (exceptId: 내 계정은 빼고)
 function normNick(t) { return String(t || "").replace(/\s+/g, "").toLowerCase(); }
 function nickTaken(nick, exceptId) {
-  // 관리자 닉네임은 관리자 본인 말고는 쓸 수 없어요
+  // 관리자 닉네임은 관리자가 이미 있으면 다른 사람이 쓸 수 없어요
+  // (회원 정보는 사이트 주소·브라우저마다 따로라서, 새 주소에서는 관리자가 처음 한 번 가입할 수 있어야 해요)
   if (ADMIN_NICKS.some(a => normNick(a) === normNick(nick))) {
-    const me = getUsers().find(u => u.id === exceptId);
-    if (!me || !isAdmin(me)) return true;
+    const adminExists = getUsers().some(u => u.id !== exceptId &&
+      (u.role === "admin" || ADMIN_NICKS.some(a => normNick(a) === normNick(u.nick))));
+    if (adminExists) return true;
   }
   return getUsers().some(u => u.id !== exceptId && normNick(u.nick) === normNick(nick));
 }

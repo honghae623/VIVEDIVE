@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아이디·비밀번호 찾기 · VIVEDIVE</title>
+
+  <!-- 구글 웹폰트: 영문 세리프(매거진 느낌) + 한글 명조/고딕 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= 상단 바 ================= -->
+  <nav class="topbar">
+    <div class="nav-left">
+      <button class="menu-btn" type="button" aria-label="구역 메뉴 열기">☰</button>
+      <a class="logo" href="index.html">VIVEDIVE</a>
+    </div>
+    <a class="back-link" href="index.html#guide">← 메인으로</a>
+  </nav>
+
+  <!-- ================= 아이디·비밀번호 찾기 ================= -->
+  <main class="faq auth-page">
+    <section class="faq-head">
+      <p class="faq-eyebrow">FIND ACCOUNT</p>
+      <h1>아이디·비밀번호 찾기</h1>
+      <p>가입할 때 입력한 회원 정보로 본인 확인을 해요.</p>
+    </section>
+
+    <div class="auth-card">
+      <div class="my-tabs" role="tablist">
+        <button class="my-tab" type="button" role="tab" data-tab="pw">비밀번호 찾기</button>
+        <button class="my-tab" type="button" role="tab" data-tab="id">아이디 찾기</button>
+      </div>
+
+      <!-- 비밀번호 찾기 1단계: 본인 확인 -->
+      <form id="pwForm" data-panel="pw" novalidate>
+        <div class="field">
+          <label for="pwId">아이디</label>
+          <input type="text" id="pwId" autocomplete="username" placeholder="아이디를 입력해 주세요">
+        </div>
+        <div class="field">
+          <label for="pwName">이름</label>
+          <input type="text" id="pwName" autocomplete="name" placeholder="가입할 때 입력한 이름">
+        </div>
+        <div class="field">
+          <label for="pwNick">닉네임</label>
+          <input type="text" id="pwNick" placeholder="가입할 때 입력한 닉네임">
+        </div>
+        <p class="form-error" id="pwError" role="alert"></p>
+        <button class="submit-btn" type="submit">본인 확인하기</button>
+      </form>
+
+      <!-- 비밀번호 찾기 2단계: 새 비밀번호 -->
+      <form id="resetForm" data-panel="reset" novalidate hidden>
+        <p class="form-ok" id="resetHello"></p>
+        <div class="field">
+          <label for="newPw">새 비밀번호</label>
+          <input type="password" id="newPw" autocomplete="new-password" placeholder="8자 이상">
+        </div>
+        <div class="field">
+          <label for="newPw2">새 비밀번호 확인</label>
+          <input type="password" id="newPw2" autocomplete="new-password" placeholder="비밀번호를 한 번 더 입력해 주세요">
+        </div>
+        <p class="form-error" id="resetError" role="alert"></p>
+        <button class="submit-btn" type="submit">비밀번호 바꾸기</button>
+      </form>
+
+      <!-- 아이디 찾기 -->
+      <form id="idForm" data-panel="id" novalidate hidden>
+        <div class="field">
+          <label for="idName">이름</label>
+          <input type="text" id="idName" autocomplete="name" placeholder="가입할 때 입력한 이름">
+        </div>
+        <div class="field">
+          <label for="idNick">닉네임</label>
+          <input type="text" id="idNick" placeholder="가입할 때 입력한 닉네임">
+        </div>
+        <p class="form-error" id="idError" role="alert"></p>
+        <p class="form-ok" id="idResult" role="status"></p>
+        <button class="submit-btn" type="submit">아이디 찾기</button>
+      </form>
+
+      <!-- 완료 -->
+      <div id="doneBox" data-panel="done" hidden>
+        <p class="form-ok">비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.</p>
+        <a class="submit-btn" id="toLoginBtn" href="login.html">로그인하러 가기</a>
+      </div>
+
+      <p class="auth-switch">비밀번호가 생각나셨나요?<a id="toLogin" href="login.html">로그인</a></p>
+    </div>
+  </main>
+
+  <footer>
+    <span class="logo">VIVEDIVE</span>
+    방문 전 영업시간·휴무일은 꼭 다시 확인해 주세요.
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="lang-data.js"></script>
+  <script src="lang.js"></script>
+  <script src="common.js"></script>
+  <script>
+    // ※ 서버가 없는 시연판이라 메일·문자 인증 대신, 가입할 때 적은 이름·닉네임으로 본인 확인을 해요.
+    const $ = id => document.getElementById(id);
+    const same = (a, b) => normNick(a) === normNick(b); // 띄어쓰기·대소문자 무시
+    const SOCIAL_LABEL = { naver: "네이버", kakao: "카카오" };
+    let resetId = null; // 본인 확인을 통과한 아이디
+
+    // 로그인 화면에서 넘어온 돌아갈 페이지를 그대로 이어 줘요
+    const next = new URLSearchParams(location.search).get("next");
+    if (next) ["toLogin", "toLoginBtn"].forEach(id => $(id).href = "login.html?next=" + encodeURIComponent(next));
+
+    function showPanel(name) {
+      document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== name);
+      const tab = name === "id" ? "id" : "pw";
+      document.querySelectorAll(".my-tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    }
+    document.querySelectorAll(".my-tab").forEach(t => t.addEventListener("click", () => showPanel(t.dataset.tab)));
+    showPanel(location.hash === "#id" ? "id" : "pw");
+
+    function showError(box, fields, msg) {
+      box.closest("form").querySelectorAll(".field").forEach(f => f.classList.remove("invalid"));
+      fields.forEach(el => el.closest(".field").classList.add("invalid"));
+      box.textContent = msg;
+    }
+
+    // 비밀번호 찾기 1단계: 아이디 + 이름 + 닉네임이 모두 맞아야 해요
+    $("pwForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const id = $("pwId").value.trim().toLowerCase(), name = $("pwName").value.trim(), nick = $("pwNick").value.trim();
+      const empty = [!id && $("pwId"), !name && $("pwName"), !nick && $("pwNick")].filter(Boolean);
+      if (empty.length) return showError($("pwError"), empty, "아이디, 이름, 닉네임을 모두 입력해 주세요.");
+      const user = getUsers().find(u => u.id === id && same(u.name, name) && same(u.nick, nick));
+      if (!user) return showError($("pwError"), [$("pwId"), $("pwName"), $("pwNick")], "입력한 정보와 맞는 회원이 없어요.");
+      if (!user.pw) {
+        return showError($("pwError"), [], `${SOCIAL_LABEL[user.provider] || "간편"} 로그인으로 가입한 계정이에요. 로그인 화면에서 ${SOCIAL_LABEL[user.provider] || "간편"} 버튼을 눌러 주세요.`);
+      }
+      resetId = user.id;
+      $("resetHello").textContent = `${user.nick}님, 확인됐어요. 새 비밀번호를 정해 주세요.`;
+      showPanel("reset");
+      $("newPw").focus();
+    });
+
+    // 비밀번호 찾기 2단계: 새 비밀번호 저장
+    $("resetForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const pw = $("newPw").value, pw2 = $("newPw2").value;
+      if (pw.length < 8) return showError($("resetError"), [$("newPw")], "새 비밀번호는 8자 이상 입력해 주세요.");
+      if (pw !== pw2) return showError($("resetError"), [$("newPw2")], "새 비밀번호 확인이 일치하지 않아요.");
+      const users = getUsers();
+      const me = users.find(u => u.id === resetId);
+      if (!me) return showError($("resetError"), [], "입력한 정보와 맞는 회원이 없어요.");
+      me.pw = await hashPassword(me.id, pw);
+      if (!writeStore(USERS_KEY, users)) return showError($("resetError"), [], "이 브라우저에서는 저장할 수 없어요. 다른 브라우저로 시도해 주세요.");
+      resetId = null;
+      showPanel("done");
+    });
+
+    // 아이디 찾기: 이름 + 닉네임
+    $("idForm").addEventListener("submit", e => {
+      e.preventDefault();
+      $("idResult").textContent = "";
+      const name = $("idName").value.trim(), nick = $("idNick").value.trim();
+      const empty = [!name && $("idName"), !nick && $("idNick")].filter(Boolean);
+      if (empty.length) return showError($("idError"), empty, "이름과 닉네임을 모두 입력해 주세요.");
+      const user = getUsers().find(u => same(u.name, name) && same(u.nick, nick));
+      if (!user) return showError($("idError"), [$("idName"), $("idNick")], "입력한 정보와 맞는 회원이 없어요.");
+      showError($("idError"), [], "");
+      $("idResult").textContent = user.pw
+        ? `회원님의 아이디는 ‘${user.id}’예요.`
+        : `${SOCIAL_LABEL[user.provider] || "간편"} 로그인으로 가입한 계정이에요. 로그인 화면에서 ${SOCIAL_LABEL[user.provider] || "간편"} 버튼을 눌러 주세요.`;
+    });
+  </script>
+</body>
+</html>
