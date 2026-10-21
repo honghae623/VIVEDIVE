@@ -1,3 +1,5 @@
 _backup/
 *.csv
 sr.html
+
+.vercel
